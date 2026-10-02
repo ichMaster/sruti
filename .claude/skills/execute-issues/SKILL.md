@@ -76,18 +76,21 @@ Follow `CLAUDE.md` and ARCHITECTURE.md. Route by component:
   session, open a new one; past sessions replay read-only and are never rewritten.
 - **`glossary/`:** versioned data files (Q-codes, prosigns, abbreviations, per-language habits, prefixes)
   rendered into both prompts. Domain knowledge lives here, not in model memory or hardcoded strings.
-- **`explain/local`:** per piece — buffered, never word by word: instructions + glossary + the session's
-  last pieces + the new piece → Ollama `/api/chat` with a JSON schema → `{gloss, message}` in English
-  (sections 2 and 3). 5 s budget; on any failure the piece shows raw text only, never a crash.
-- **`explain/cloud`:** **only on the user's Explain action** — never on a timer, never automatic — the
-  whole session → the Claude API → a Ukrainian explanation (section 4). Prompt caching on the stable
-  prefix; every call's cost shown and summed per session; without an API key Explain reports the cloud
-  tier is off. Trigger handling and cost accounting are pure functions with an injected clock.
-- **`ui`:** v1 is the Textual TUI — the four sections of ARCHITECTURE.md §The four sections, the config
-  panel with the capture inspector (raw API messages next to how each parsed, applied on reconnect), and
-  the session switcher. v2 is the web interface: FastAPI bound to `127.0.0.1` only, the event stream over
-  a WebSocket, one static page. The core never imports interface code; view models stay pure. Unreadable
-  text is `[...]`, never a guess; call signs, Q-codes and quoted original text stay as sent.
+- **`explain/piece`:** per piece — buffered, never word by word: instructions + glossary + the session's
+  last raw pieces + the recent section-3 entries + the new piece → Gemini 3.8 Flash (`generateContent`,
+  `responseSchema`, thinking level low, key in the `x-goog-api-key` header) → `{gloss, action,
+  message/rebuilt}` in English (sections 2 and 3). 5 s budget; running cost summed per session; on any
+  failure or without a Gemini key the piece shows raw text only, never a crash.
+- **`explain/session`:** **only on the user's Explain action** — never on a timer, never automatic — the
+  whole session → Claude Opus 5.5 → a Ukrainian explanation (section 4). Prompt caching on the stable
+  prefix; every call's cost shown and summed per session; without a Claude key Explain reports it is off.
+  Trigger handling and cost accounting are pure functions with an injected clock.
+- **`ui/app`:** the desktop app — a pywebview window whose page (one inline HTML file, handed over as a
+  string) shows the four sections of ARCHITECTURE.md §The four sections, the config panel with the capture
+  inspector (raw API messages next to how each parsed, applied on reconnect), and the session switcher.
+  The page calls the core commands through the JS bridge; Python pushes core events with `evaluate_js`.
+  No HTTP server, no port. The core never imports the app's code. Unreadable text is `[...]`, never a
+  guess; call signs, Q-codes and quoted original text stay as sent.
 - **Contract changes** (CLAUDE.md **Contracts**) update ARCHITECTURE.md and the test that pins the
   contract, in the same commit.
 - **`ops` issues** produce their repo artifacts (recordings, golden examples) plus a numbered checklist for
@@ -97,12 +100,12 @@ Follow `CLAUDE.md` and ARCHITECTURE.md. Route by component:
 #### 2d. Validate
 
 1. **Lint:** `uv run ruff check .` must be clean.
-2. **Tests:** `uv run pytest` must exit 0. Every code issue adds or extends tests. Mock Ollama and the
-   Claude API, drive the link with the fake receiver; no test touches the network or a paid API.
+2. **Tests:** `uv run pytest` must exit 0. Every code issue adds or extends tests. Mock the Gemini and
+   Claude APIs, drive the link with the fake receiver; no test touches the network or a paid API.
 3. **Manual (owner) criteria:**
    - **Your share:** run whatever can be checked offline from the repo yourself (replays of recorded
      sessions, fixture checks).
-   - **The owner's share:** for the rest — live receiver sessions, real Ollama or Claude runs, quality
+   - **The owner's share:** for the rest — live receiver sessions, real Gemini or Claude runs, quality
      judgments against the reference answer — print a numbered checklist and ask the owner to perform and
      confirm it.
    - **Live runs** (a public receiver, a real model, the golden-example eval) happen only when the owner
@@ -232,7 +235,7 @@ Commit the report (`docs: vA.B execution report`, with the trailer) and push.
 - **One issue at a time**, in dependency order. Never start an issue whose dependencies aren't closed.
 - **One issue = one commit.** Never mix work across ids.
 - **No broken code.** Commit only when the gates that apply are green.
-- **Tests ship with the feature.** Ollama and the Claude API are mocked, the fake receiver replays
+- **Tests ship with the feature.** The Gemini and Claude APIs are mocked, the fake receiver replays
   recordings, and no test or gate calls the network or a paid API. Live receiver sessions, real model runs
   and the golden-example eval are opt-in, by the owner.
 - **Manual checks need the owner.** Never report a manual DoD check as passed without the owner's
@@ -245,14 +248,14 @@ Commit the report (`docs: vA.B execution report`, with the trailer) and push.
   - **Never invent.** Unreadable text is `[...]`; a call sign is never "corrected" into a different one.
   - **A polite guest.** One connection per run, identified as `sruti`; back off from busy receivers and
     respect their time limits.
-  - **The cloud tier runs only on the user's Explain action** — never on a timer, never automatically.
+  - **The session tier runs only on the user's Explain action** — never on a timer, never automatically.
   - **Sessions are manual and always saved.** Only a retune or quit ends a session; past sessions are
     never rewritten.
-  - **Degrade, don't crash.** No Ollama → raw text only; no API key → Explain reports the cloud tier is
-    off; a dropped link reconnects with backoff.
+  - **Degrade, don't crash.** No Gemini key or a failed piece call → raw text only; no Claude key →
+    Explain reports it is off; a dropped link reconnects with backoff.
 - **Secrets stay out:**
   - Never print `.env`. To check that a value is set, test it without echoing it
-    (`grep -q '^ANTHROPIC_API_KEY=.' .env`).
-  - The API key never goes into argv, logs, commits or issue comments.
+    (`grep -q '^GEMINI_API_KEY=.' .env`).
+  - An API key never goes into argv, logs, commits, issue comments or a URL.
 - **Ask on ambiguity.** If an issue is unclear, ask rather than guess.
 - **Progress updates.** Print a short status line after each issue.

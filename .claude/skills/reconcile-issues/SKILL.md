@@ -46,7 +46,7 @@ Compare each issue's **assumptions** with reality:
 - **Paths:** wrong or renamed files and modules (e.g. an issue naming `sruti/decoder.py` when the code has
   `sruti/receiver.py`).
 - **Names and signatures** that changed: functions, config keys (e.g. a segmenter threshold read from the
-  config file vs `.env`), the session-log record fields, the Ollama request shape, the Claude API call
+  config file vs `.env`), the session-log record fields, the Gemini request shape, the Claude API call
   shape, CLI flags.
 - **Contracts** that a landed fix moved past the spec: the piece cut rules, the record shapes, the local
   explainer's JSON schema, the cloud scheduling rules, the `cw_pboff` handling.

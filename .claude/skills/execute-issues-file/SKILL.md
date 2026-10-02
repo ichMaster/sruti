@@ -62,19 +62,20 @@ Show the ordered plan and proceed. With `--dry-run`, stop here.
    - `store`: append-only JSONL sessions under `var/sessions/` in ARCHITECTURE.md's record shapes; replay
      to the same text; the manual session switch (retune = new session); past sessions never rewritten.
    - `glossary/`: versioned data rendered into both prompts.
-   - `explain/local`: Ollama with a JSON schema → `{gloss, message}` in English (sections 2–3), buffered
-     by piece; 5 s budget; on failure raw text only.
-   - `explain/cloud`: the Claude API **only on the Explain action** → a Ukrainian explanation (section 4);
-     prompt caching on the stable prefix; per-call cost shown and summed; Explain reports the cloud tier is
-     off without an API key.
-   - `ui`: the Textual TUI (v1) — the four sections, the config panel with the capture inspector, the
-     session switcher; the web interface (v2) on `127.0.0.1` only. The core never imports interface code;
-     `[...]` for the unreadable, call signs and Q-codes as sent.
+   - `explain/piece`: Gemini 3.8 Flash with a response schema → `{gloss, action, message/rebuilt}` in
+     English (sections 2–3), buffered by piece; 5 s budget; running cost summed per session; on failure or
+     without a Gemini key raw text only.
+   - `explain/session`: Claude Opus 5.5 **only on the Explain action** → a Ukrainian explanation
+     (section 4); prompt caching on the stable prefix; per-call cost shown and summed; Explain reports it
+     is off without a Claude key.
+   - `ui/app`: the pywebview desktop app — the four sections, the config panel with the capture
+     inspector, the session switcher; the page talks to the core only through the JS bridge, no port. The
+     core never imports the app's code; `[...]` for the unreadable, call signs and Q-codes as sent.
    - `ops` issues produce their repo artifacts (recordings, golden examples) plus a numbered checklist for
      the owner. Don't connect to a public receiver or call a real model unless the owner asks.
    - A **contract change** updates ARCHITECTURE.md and its pinning test in the same commit.
 4. **Validate:**
-   - `uv run ruff check .` clean and `uv run pytest` green, with Ollama and the Claude API mocked and the
+   - `uv run ruff check .` clean and `uv run pytest` green, with the Gemini and Claude APIs mocked and the
      fake receiver for the link.
    - For **Manual (owner)** criteria, run the offline checks (replays, fixtures) yourself and ask the owner
      to perform and confirm the rest (live receivers, real model runs, quality judgments).
@@ -136,14 +137,14 @@ exists.
   `gh issue list`/`create`/`close`, and never write `vA.B-github-report.md`.
 - **One issue = one commit**, one issue at a time, in dependency order.
 - **No broken code.** Commit only when lint and tests are green.
-- **Tests ship with the feature**, with Ollama and the Claude API mocked and the fake receiver for the
+- **Tests ship with the feature**, with the Gemini and Claude APIs mocked and the fake receiver for the
   link. No test or gate calls the network or a paid API.
 - **Manual checks need the owner.** Never report one as passed on your own. Live receivers, real model
   runs and the golden-example eval are opt-in, by the owner.
 - **Contracts stay stable**: ARCHITECTURE.md and the pinning test change together.
 - **Mission invariants hold**: listen only, never invent (`[...]`, no "corrected" call signs), a polite
-  guest, the cloud tier only on the Explain action, sessions manual and always saved, degrade instead of
+  guest, the session tier only on the Explain action, sessions manual and always saved, degrade instead of
   crashing.
-- **Secrets stay out.** Never print `.env`; the API key never appears in argv, logs or commits.
+- **Secrets stay out.** Never print `.env`; an API key never appears in argv, logs, commits or a URL.
 - **Ask on ambiguity.** If an issue's scope is unclear, ask rather than guess.
 - **Progress updates.** Print a short status line after each issue.

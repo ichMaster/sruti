@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sruti Ports & Perimeters</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; the diagram and table each scroll sideways in their own container. */
+:root{
+  --bg:#f3f5f7; --card:#ffffff; --fg:#1d2733; --muted:#5b6b7b; --line:#c6cfd8;
+  --accent:#b4690e; --danger:#b3362b; --zone:#eef1f4; --chip:#e4e9ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e141b; --card:#151c24; --fg:#e6ebf0; --muted:#93a4b4; --line:#324150;
+    --accent:#e8963a; --danger:#e06552; --zone:#121a22; --chip:#1d2733;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e141b; --card:#151c24; --fg:#e6ebf0; --muted:#93a4b4; --line:#324150;
+  --accent:#e8963a; --danger:#e06552; --zone:#121a22; --chip:#1d2733;
+  color-scheme:dark;
+}
+body{ margin:0;
+  background:var(--bg); color:var(--fg);
+  font-family:"Public Sans",system-ui,sans-serif; font-size:15px; line-height:1.55;
+  padding-inline:16px; padding-block:0;
+}
+.wrap{max-width:1160px; margin:0 auto; padding-block:40px 64px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 10px;}
+h1{font-family:"Spectral",Georgia,serif; font-weight:600; font-size:clamp(28px,4.5vw,40px);
+  margin:0 0 10px; text-wrap:balance;}
+h2{font-family:"Spectral",Georgia,serif; font-weight:600; font-size:22px; margin:40px 0 12px; text-wrap:balance;}
+.lede{max-width:65ch; color:var(--muted); margin:0 0 28px;}
+.lede strong{color:var(--fg); font-weight:600;}
+
+figure{margin:0; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 10px 6px;}
+.scroll{overflow-x:auto;}
+.scroll svg{min-width:1080px; width:100%; height:auto; display:block;}
+figcaption{font-size:12.5px; color:var(--muted); padding:10px 8px 8px; max-width:90ch;}
+
+.legend{display:flex; flex-wrap:wrap; gap:10px 22px; font-size:12px; color:var(--muted);
+  padding:4px 8px 8px; align-items:center;}
+.legend span{display:inline-flex; align-items:center; gap:7px;}
+.sw{display:inline-block; width:26px; height:0; border-top:2.5px solid var(--fg);}
+.sw.acc{border-color:var(--accent);}
+.sw.dng{border-color:var(--danger); border-top-style:dashed;}
+.sw.dsh{border-top-style:dashed; border-color:var(--muted);}
+
+table{border-collapse:collapse; width:100%; min-width:860px; font-size:13.5px;}
+.tablebox{overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:10px;}
+th,td{text-align:left; padding:10px 14px; border-top:1px solid var(--line); vertical-align:top;}
+thead th{border-top:0; font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:500;}
+td.mono, .mono{font-family:"IBM Plex Mono",monospace; font-size:12.5px;}
+td b{font-weight:600;}
+.dir{font-family:"IBM Plex Mono",monospace; font-size:11px; padding:2px 7px; border-radius:99px;
+  background:var(--chip); white-space:nowrap;}
+.dir.out{color:var(--accent);}
+.dir.blk{color:var(--danger);}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px;}
+.card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+.card h3{margin:0 0 6px; font-size:14px; font-weight:600;}
+.card h3 .mono{color:var(--muted); font-weight:400;}
+.card p{margin:0; font-size:13px; color:var(--muted);}
+.card p b{color:var(--fg); font-weight:600;}
+
+.foot{margin-top:36px; font-size:12.5px; color:var(--muted); max-width:80ch;}
+.foot code{font-family:"IBM Plex Mono",monospace; font-size:11.5px; background:var(--chip);
+  padding:1px 5px; border-radius:4px;}
+
+/* SVG text + shapes take theme tokens */
+svg text{font-family:"Public Sans",system-ui,sans-serif; fill:var(--fg);}
+svg .zl{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.12em; fill:var(--fg); font-weight:600;}
+svg .zs{font-size:9.5px; fill:var(--muted); letter-spacing:.02em;}
+svg .bt{font-size:11.5px; font-weight:600;}
+svg .bs{font-size:9.5px; fill:var(--muted);}
+svg .ll{font-size:10px; fill:var(--muted);}
+svg .lla{font-size:10px; fill:var(--accent); font-weight:600;}
+svg .lld{font-size:10px; fill:var(--danger); font-weight:600;}
+svg .pb{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--fg);}
+svg .zone{fill:var(--zone); stroke:var(--line); stroke-dasharray:7 5; rx:10;}
+svg .box{fill:var(--card); stroke:var(--line);}
+svg .badge{fill:var(--chip); stroke:var(--line);}
+svg .ctl{stroke:var(--muted); stroke-width:1.6; fill:none;}
+svg .dat{stroke:var(--accent); stroke-width:2.2; fill:none;}
+svg .blk{stroke:var(--danger); stroke-width:1.8; stroke-dasharray:6 5; fill:none;}
+svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">sruti · specification · architecture</p>
+  <h1>Ports &amp; perimeters</h1>
+  <p class="lede">Every connection sruti has is <strong>opened from the Mac, outward</strong> — the managed Mac's
+  endpoint filtering destroys anything inbound, and the design never needs it. Four perimeters sit between an
+  operator's key and the four sections on screen: the air, the receiver's site, the internet, and the Mac itself,
+  with the app's window inside it.</p>
+
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1240 770" role="img" aria-label="sruti network architecture: HF signals reach a public KiwiSDR that decodes CW on site; the Mac opens an outbound WebSocket to it on port 8073, calls the Gemini API on 443 for every closed piece and the Claude API on 443 only when Explain is pressed; the app's window talks to the core through the pywebview bridge, and nothing listens on any port. All inbound connections to the Mac are destroyed, and there is no transmit path back to the air.">
+      <defs>
+        <marker id="m-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+        </marker>
+        <marker id="m-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+        </marker>
+        <marker id="m-dng" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--danger)"/>
+        </marker>
+      </defs>
+
+      <!-- ===== zones ===== -->
+      <rect class="zone" x="16"  y="70" width="140" height="560" rx="10"/>
+      <rect class="zone" x="186" y="70" width="240" height="300" rx="10"/>
+      <rect class="zone" x="456" y="70" width="260" height="560" rx="10"/>
+      <rect class="zone" x="746" y="70" width="478" height="560" rx="10"/>
+      <rect class="zone" x="746" y="660" width="478" height="92" rx="10"/>
+
+      <text class="zl" x="28" y="94">THE AIR</text>
+      <text class="zs" x="28" y="110">HF bands</text>
+
+      <text class="zl" x="198" y="94">PUBLIC KIWISDR</text>
+      <text class="zs" x="198" y="110">someone else's receiver · ~870 listed</text>
+
+      <text class="zl" x="468" y="94">THE INTERNET</text>
+      <text class="zs" x="468" y="110">crossed outbound only</text>
+
+      <text class="zl" x="758" y="94">THE MANAGED MAC — M1 PRO, 32 GB</text>
+      <text class="zs" x="758" y="110">endpoint filtering: every inbound connection destroyed</text>
+
+      <text class="zl" x="758" y="684">THE LAN</text>
+
+      <!-- ===== air contents ===== -->
+      <g class="ctl" style="stroke:var(--muted)">
+        <line x1="86" y1="150" x2="86" y2="196"/>
+        <line x1="74" y1="162" x2="86" y2="150"/>
+        <line x1="98" y1="162" x2="86" y2="150"/>
+        <line x1="86" y1="330" x2="86" y2="376"/>
+        <line x1="74" y1="342" x2="86" y2="330"/>
+        <line x1="98" y1="342" x2="86" y2="330"/>
+      </g>
+      <text class="bs" x="86" y="216" text-anchor="middle">CW operators</text>
+      <text class="bs" x="86" y="231" text-anchor="middle">7.000–7.040 MHz</text>
+      <text class="bs" x="86" y="246" text-anchor="middle">14.000–14.070 MHz</text>
+      <text class="bs" x="86" y="396" text-anchor="middle">NCDXF beacons</text>
+      <text class="bs" x="86" y="411" text-anchor="middle">14.100 MHz · 22 WPM</text>
+
+      <!-- radio waves into the antenna -->
+      <g class="thin">
+        <path d="M 160 136 q 7 12 0 24"/>
+        <path d="M 169 130 q 10 18 0 36"/>
+        <path d="M 178 124 q 13 24 0 48"/>
+      </g>
+
+      <!-- ===== receiver site contents ===== -->
+      <line class="ctl" x1="216" y1="136" x2="216" y2="186"/>
+      <line class="ctl" x1="204" y1="148" x2="216" y2="136"/>
+      <line class="ctl" x1="228" y1="148" x2="216" y2="136"/>
+      <rect class="box" x="206" y="190" width="200" height="40" rx="6"/>
+      <text class="bt" x="216" y="207">SDR front end</text>
+      <text class="bs" x="216" y="222">12 kHz mono 16-bit audio</text>
+      <line class="ctl" x1="306" y1="230" x2="306" y2="244" marker-end="url(#m-ink)"/>
+      <rect class="box" x="206" y="248" width="200" height="52" rx="6"/>
+      <text class="bt" x="216" y="266">CW_decoder extension</text>
+      <text class="bs" x="216" y="281">Goertzel · decodes at the receiver</text>
+      <text class="bs" x="216" y="294">unknown code → [err]</text>
+      <text class="bs" x="198" y="348">guest rules: one slot · named “sruti”</text>
+      <text class="bs" x="198" y="362">back off when busy · respect time limit</text>
+
+      <!-- port badge on the receiver's border -->
+      <rect class="badge" x="388" y="139" width="76" height="22" rx="11"/>
+      <text class="pb" x="426" y="154" text-anchor="middle">ws :8073</text>
+
+      <!-- ===== internet contents ===== -->
+      <rect class="box" x="476" y="300" width="220" height="74" rx="6"/>
+      <text class="bt" x="488" y="320" style="font-size:10.5px">generativelanguage.googleapis.com</text>
+      <text class="bs" x="488" y="336">Gemini 3.8 Flash</text>
+      <text class="bs" x="488" y="350">gloss + message, English</text>
+      <rect class="badge" x="488" y="356" width="78" height="14" rx="7"/>
+      <text class="pb" x="527" y="367" text-anchor="middle" style="font-size:9px">https :443</text>
+
+      <rect class="box" x="476" y="392" width="220" height="74" rx="6"/>
+      <text class="bt" x="488" y="412">api.anthropic.com</text>
+      <text class="bs" x="488" y="428">Claude Opus 5.5 · Fable 5.1</text>
+      <text class="bs" x="488" y="442">explanation in Ukrainian</text>
+      <rect class="badge" x="488" y="448" width="78" height="14" rx="7"/>
+      <text class="pb" x="527" y="459" text-anchor="middle" style="font-size:9px">https :443</text>
+
+      <rect class="box" x="476" y="486" width="220" height="58" rx="6"/>
+      <text class="bt" x="488" y="506">kiwisdr.com/public</text>
+      <text class="bs" x="488" y="521">receiver directory</text>
+      <rect class="badge" x="488" y="527" width="78" height="14" rx="7"/>
+      <text class="pb" x="527" y="538" text-anchor="middle" style="font-size:9px">https :443</text>
+      <text class="bs" x="586" y="564" text-anchor="middle">manual pick in v0–v1 · automated ≥ v3</text>
+
+      <!-- ===== link A: websocket pair ===== -->
+      <text class="ll" x="588" y="135" text-anchor="middle">WebSocket — opened from the Mac, one guest slot</text>
+      <line class="ctl" x1="790" y1="176" x2="432" y2="176" marker-end="url(#m-ink)"/>
+      <text class="ll" x="588" y="170" text-anchor="middle">SET tuning + decoder params — nothing else</text>
+      <line class="dat" x1="432" y1="198" x2="790" y2="198" marker-end="url(#m-acc)"/>
+      <text class="lla" x="588" y="216" text-anchor="middle">SND audio + EXT cw_chars · cw_wpm · cw_train</text>
+
+      <!-- ===== link C: config → directory ===== -->
+      <polyline class="ctl" points="782,421 764,421 764,515 702,515" marker-end="url(#m-ink)"/>
+
+      <!-- ===== Mac contents: the sruti process ===== -->
+      <rect class="box" x="766" y="132" width="280" height="368" rx="8"/>
+      <text class="bt" x="780" y="152" style="font-size:10.5px; letter-spacing:.08em">SRUTI — ONE PROCESS</text>
+
+      <rect class="box" x="782" y="166" width="248" height="36" rx="5"/>
+      <text class="bt" x="792" y="182">receiver link</text>
+      <text class="bs" x="792" y="196">kiwiclient · reconnect w/ backoff</text>
+      <line class="ctl" x1="906" y1="202" x2="906" y2="212" marker-end="url(#m-ink)"/>
+
+      <rect class="box" x="782" y="214" width="248" height="36" rx="5"/>
+      <text class="bt" x="792" y="230">segmenter</text>
+      <text class="bs" x="792" y="244">pure · chars → pieces</text>
+      <line class="ctl" x1="906" y1="250" x2="906" y2="260" marker-end="url(#m-ink)"/>
+
+      <rect class="box" x="782" y="262" width="248" height="36" rx="5"/>
+      <text class="bt" x="792" y="278">session store</text>
+      <text class="bs" x="792" y="292">append-only JSONL · manual switch</text>
+      <text class="bs" x="906" y="309" text-anchor="middle" style="font-size:9px">event stream</text>
+
+      <rect class="box" x="782" y="314" width="118" height="54" rx="5"/>
+      <text class="bt" x="792" y="332">explain/piece</text>
+      <text class="bs" x="792" y="346">per piece ≤ 5 s</text>
+      <text class="bs" x="792" y="359">§2–3, English</text>
+
+      <rect class="box" x="912" y="314" width="118" height="54" rx="5"/>
+      <text class="bt" x="922" y="332">explain/session</text>
+      <text class="bs" x="922" y="346">Explain press</text>
+      <text class="bs" x="922" y="359">only · §4, укр.</text>
+
+      <rect class="box" x="782" y="388" width="248" height="66" rx="5"/>
+      <text class="bt" x="792" y="406">desktop app — four sections</text>
+      <text class="bs" x="792" y="421">original · word-by-word · message · explain</text>
+      <text class="bs" x="792" y="435">config panel + capture inspector</text>
+      <text class="bs" x="792" y="448">session switcher (switch = retune)</text>
+
+      <!-- ===== link B: explain/piece → Gemini ===== -->
+      <line class="ctl" x1="782" y1="341" x2="702" y2="341" marker-end="url(#m-ink)"/>
+      <text class="ll" x="734" y="331" text-anchor="middle">every piece</text>
+
+      <!-- ===== link B2: explain/session → Anthropic ===== -->
+      <polyline class="ctl" points="971,368 971,380 748,380 748,422 702,422" marker-end="url(#m-ink)"/>
+      <text class="ll" x="860" y="377" text-anchor="middle">on Explain only</text>
+
+      <!-- files -->
+      <line class="thin" x1="820" y1="500" x2="820" y2="513" stroke-dasharray="3 3"/>
+      <rect class="badge" x="766" y="515" width="158" height="24" rx="5"/>
+      <text class="pb" x="776" y="531">var/sessions/*.jsonl</text>
+      <rect class="badge" x="934" y="515" width="92" height="24" rx="5"/>
+      <text class="pb" x="944" y="531">sruti.toml</text>
+      <rect class="badge" x="766" y="547" width="128" height="24" rx="5"/>
+      <text class="pb" x="776" y="563">.env — API keys</text>
+      <text class="bs" x="904" y="563">gitignored · never printed</text>
+
+      <!-- the window (pywebview) -->
+      <rect class="box" x="1066" y="372" width="148" height="100" rx="6"/>
+      <text class="bt" x="1076" y="390">macOS window</text>
+      <text class="bs" x="1076" y="405">pywebview · WebKit</text>
+      <text class="bs" x="1076" y="419">page handed over</text>
+      <text class="bs" x="1076" y="432">as a string</text>
+      <text class="bs" x="1076" y="446">JS bridge ⇄ core</text>
+      <text class="lla" x="1076" y="462">no port · nothing listens</text>
+      <line class="ctl" x1="1032" y1="421" x2="1064" y2="421" marker-start="url(#m-ink)" marker-end="url(#m-ink)"/>
+
+      <!-- ===== LAN: blocked inbound ===== -->
+      <text class="bs" x="758" y="706">ich-picobox — Ubuntu, 4 cores, no GPU · unused in v1</text>
+      <text class="bs" x="758" y="722">router · other devices — nothing in sruti listens</text>
+      <line class="blk" x1="1100" y1="660" x2="1100" y2="634" marker-end="url(#m-dng)"/>
+      <circle cx="1100" cy="647" r="8" fill="var(--bg)" stroke="var(--danger)" stroke-width="1.5"/>
+      <line x1="1095" y1="642" x2="1105" y2="652" stroke="var(--danger)" stroke-width="1.8"/>
+      <line x1="1105" y1="642" x2="1095" y2="652" stroke="var(--danger)" stroke-width="1.8"/>
+      <text class="lld" x="1088" y="651" text-anchor="end">any inbound — destroyed</text>
+
+      <!-- ===== no transmit path ===== -->
+      <line class="blk" x1="746" y1="600" x2="166" y2="600" marker-end="url(#m-dng)"/>
+      <circle cx="456" cy="600" r="9" fill="var(--bg)" stroke="var(--danger)" stroke-width="1.5"/>
+      <line x1="450" y1="594" x2="462" y2="606" stroke="var(--danger)" stroke-width="1.8"/>
+      <line x1="462" y1="594" x2="450" y2="606" stroke="var(--danger)" stroke-width="1.8"/>
+      <text class="lld" x="456" y="586" text-anchor="middle">no transmit path — never keys, never talks back on the air</text>
+    </svg>
+    </div>
+    <div class="legend">
+      <span><i class="sw acc"></i> decoded text (the data path)</span>
+      <span><i class="sw"></i> commands / requests</span>
+      <span><i class="sw dng"></i> blocked by design</span>
+    </div>
+    <figcaption>Decoded CW text flows one way — air → receiver's decoder → WebSocket → segmenter → store →
+    explainers → the four sections. The Mac originates every connection and listens on none: the window talks to
+    the core through the pywebview bridge, not over a socket.</figcaption>
+  </figure>
+
+  <h2>Every port, every crossing</h2>
+  <div class="tablebox">
+  <table>
+    <thead><tr><th>Connection</th><th>Direction</th><th>Port / protocol</th><th>What crosses</th><th>Guard</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>sruti → public KiwiSDR</b></td>
+        <td><span class="dir out">outbound</span></td>
+        <td class="mono">ws://&lt;receiver&gt;:8073<br>(the receiver's public port; varies)</td>
+        <td>in: SND audio + EXT <span class="mono">cw_chars / cw_wpm / cw_train</span>; out: <span class="mono">SET</span> tuning and decoder parameters — nothing else</td>
+        <td>one slot, identified <span class="mono">sruti</span>; backs off when busy; respects the time limit</td>
+      </tr>
+      <tr>
+        <td><b>sruti → generativelanguage.googleapis.com</b></td>
+        <td><span class="dir out">outbound</span></td>
+        <td class="mono">https :443</td>
+        <td>glossary + recent pieces + the new piece → <span class="mono">{gloss, action, message/rebuilt}</span> in English (sections 2–3)</td>
+        <td>once per closed piece; key in the <span class="mono">x-goog-api-key</span> header from <span class="mono">.env</span>, never in the URL; running cost summed per session</td>
+      </tr>
+      <tr>
+        <td><b>sruti → api.anthropic.com</b></td>
+        <td><span class="dir out">outbound</span></td>
+        <td class="mono">https :443</td>
+        <td>glossary + the whole session → the Ukrainian explanation (section 4)</td>
+        <td>fires <b>only on the Explain press</b>; key read from <span class="mono">.env</span>; cost shown per call and summed per session</td>
+      </tr>
+      <tr>
+        <td><b>sruti → kiwisdr.com/public</b></td>
+        <td><span class="dir out">outbound</span></td>
+        <td class="mono">https :443</td>
+        <td>the public receiver directory</td>
+        <td>manual in v0–v1; automated no earlier than v3</td>
+      </tr>
+      <tr>
+        <td><b>the window ⇄ the core</b></td>
+        <td><span class="dir">in process</span></td>
+        <td class="mono">pywebview JS bridge<br>(no port)</td>
+        <td>core commands from the page; core events pushed into the page</td>
+        <td>the page is handed over as a string, so no HTTP server starts — a test pins it</td>
+      </tr>
+      <tr>
+        <td><b>anything → the Mac</b></td>
+        <td><span class="dir blk">inbound</span></td>
+        <td class="mono">any</td>
+        <td>—</td>
+        <td>destroyed by endpoint filtering; the design never needs an inbound connection</td>
+      </tr>
+      <tr>
+        <td><b>sruti → the air</b></td>
+        <td><span class="dir blk">none</span></td>
+        <td class="mono">—</td>
+        <td>—</td>
+        <td>no transmit path exists — by principle and by construction (listen only)</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>The perimeters, outside in</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>The air <span class="mono">· HF</span></h3>
+      <p>Operators key CW in the 7 and 14 MHz band segments; the NCDXF beacons on 14.100 MHz are the known-answer
+      test signal. sruti can only ever be on the receiving side of this boundary: <b>there is no path back</b>.</p>
+    </div>
+    <div class="card">
+      <h3>The receiver's site <span class="mono">· ws :8073</span></h3>
+      <p>A public KiwiSDR someone else owns. Decoding happens <b>here</b>, in its CW_decoder extension — text, not
+      audio, is what sruti consumes in v1 (audio decoding on the Mac is v2). sruti is a guest: one slot, a clear
+      name, polite backoff.</p>
+    </div>
+    <div class="card">
+      <h3>The internet <span class="mono">· :443, :8073</span></h3>
+      <p>Crossed only by connections the Mac opens: the receiver WebSocket, the Gemini API call for each piece, the
+      Claude API call (button-gated), and the receiver directory. Nothing out there can initiate a connection in.</p>
+    </div>
+    <div class="card">
+      <h3>The managed Mac <span class="mono">· inbound ✕</span></h3>
+      <p>The hard perimeter. Endpoint filtering destroys every inbound LAN or internet connection, so sruti is built
+      to need none. Secrets stay inside: <span class="mono">.env</span> holds the two API keys, gitignored and never
+      printed; sessions live in <span class="mono">var/sessions/</span>.</p>
+    </div>
+    <div class="card">
+      <h3>The window <span class="mono">· no port</span></h3>
+      <p>A native macOS window from pywebview on the system WebKit. The page is handed over as a string and talks
+      to the core only through the JS bridge, so nothing in sruti listens on any port — <b>not even loopback</b>.</p>
+    </div>
+    <div class="card">
+      <h3>In process <span class="mono">· events</span></h3>
+      <p>Inside sruti the core (receiver link → segmenter → store → explainers) talks to the interface only through
+      the event stream and the core commands. The window is a shell over the core, which
+      <b>never imports interface code</b>.</p>
+    </div>
+  </div>
+
+  <p class="foot">Sources: <code>specification/ARCHITECTURE.md</code> — §Core and interfaces, §The receiver,
+  §The four sections, §The two tiers, §Configuration and the config panel, §Hosts; principles from
+  <code>specification/MISSION.md</code>. The KiwiSDR protocol table in ARCHITECTURE lists the exact
+  <code>SET</code> / <code>cw_*</code> messages allowed through the :8073 WebSocket; <code>:8073</code> is the
+  common default — each directory entry names its real port.</p>
+</div>

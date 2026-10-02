@@ -73,39 +73,51 @@ defects, not restatements of what works.
   - Is unreadable text marked `[...]`, never guessed? Is the decoder's `[err]` handled?
   - Can any prompt or post-processing "correct" a call sign into a different call sign?
   - Is uncertainty surfaced rather than smoothed over?
-- **Local explainer:**
+- **Piece explainer (Gemini 3.8 Flash):**
   - Is it called per **piece** (the buffer), never word by word as characters arrive?
-  - Is the model output validated against the `{gloss, message}` JSON schema, and does invalid or missing
-    output degrade to raw text only — never a crash, never a half-parsed guess?
-  - Is the local model runtime (Ollama) being down or slow handled within the 5 s budget?
+  - Is the model output validated against the `{gloss, action, message/rebuilt}` JSON schema, and does
+    invalid or missing output degrade to raw text only — never a crash, never a half-parsed guess?
+  - Are a missing Gemini key, no network, an API error and a call past the 5 s budget all handled as
+    "raw text only" for that piece?
+  - Does the Gemini key travel only in the `x-goog-api-key` header — never in the URL, a log line or an
+    exception message? Is the running cost summed per session correctly?
   - Does the prompt carry the glossary, the last pieces and the new piece as specified?
   - Are the gloss and the message in English (per configuration), with call signs, Q-codes and quoted
     original text kept as sent? Does the gloss cover every token rather than skipping the hard ones?
-- **Cloud explainer:**
+  - Is the message a natural rendering with CW repetitions collapsed (`CQ CQ CQ` said once), never a
+    word-for-word echo of the gloss — and never adding anything that wasn't sent?
+  - Are the three actions honored: `none` → a repeat counter, not a duplicate line; `append` → one entry;
+    `rebuild` → replaces **only the window the model was shown**, marked "⟲ rewritten" on screen, while
+    the store stays append-only and a replay reproduces the same sequence?
+- **Session explainer (Claude Opus 5.5):**
   - Does it fire **only on the user's Explain action** — and never on a timer, at session end, on
     reconnect, or anywhere else?
-  - Does a missing API key mean local-only operation, with Explain reporting the cloud tier is off — no
-    errors, no crash?
+  - Does a missing Claude key leave everything except section 4 working, with Explain reporting it is
+    off — no errors, no crash?
   - Is every call's cost computed, shown, and summed per session correctly?
   - Is the stable prefix (instructions + glossary) first, so prompt caching works across presses?
   - Is the explanation in Ukrainian (per configuration), reference-answer style, over the whole session?
   - Can a failed or slow Claude call kill the listening loop or wedge section 4? A failure must leave the
     previous explanation with an error note.
-- **The interface (TUI; web from v2):**
+- **The desktop app (pywebview):**
   - Do the four sections update per the display contract — section 1 live, sections 2–3 on piece close,
     section 4 only on Explain?
-  - Does the core import any interface code, or an interface reach around the commands into the core?
-  - Are the view models pure and tested, and is the TUI driven headless in tests?
+  - Does the core import any of the app's code, or does the page reach past the core commands?
+  - Is the bridge tested with a fake window (commands in, events out, in order)?
+  - Does any event push (`evaluate_js`) build JavaScript from untrusted text without JSON-encoding it?
   - Does the config panel apply changes on reconnect and save them to the config file, and does the
     capture inspector show the raw extension messages next to how each parsed?
   - Does the session switcher open past sessions read-only, and does "new session" retune?
-  - (v2) Is the web server bound to `127.0.0.1` only, with a test pinning the binding?
+  - Does the app open any listening socket — an HTTP server, a debug port (it must not), and does a test
+    pin that the window is created from a string?
 - **The session store:**
   - Is every character, piece and explanation persisted with timestamps, in the record shapes of
     ARCHITECTURE.md §Pieces and sessions?
   - Does a session replay to the same text, and does a crash mid-write corrupt the file?
   - Does retuning close the current session and open a new one without losing characters, and is a past
     session ever rewritten (it must not be)?
+  - Does a rename append a `session` header record (latest wins) rather than renaming the file or
+    rewriting history, and does the switcher show the latest name after reopening?
 - **Robustness:**
   - Can an exception in the character callback or an explainer call kill the listening loop?
   - Are empty and huge pieces handled, and what happens when the models are slower than the stream
@@ -124,7 +136,7 @@ For each finding, capture:
 - a **proposed fix**.
 
 Cross-check against ROADMAP.md and ARCHITECTURE.md. If a gap is already scheduled for a later phase (e.g.
-local decoding is v3), note that instead of treating it as new.
+local decoding is v2), note that instead of treating it as new.
 
 ### Step 2: Write the recommendations document (the plan)
 
@@ -144,7 +156,7 @@ Decide **FIX NOW vs DEFER** honestly:
   listening loop, an invented call sign, a hammered receiver, the API key in a log, a saved session that
   doesn't replay.
 - **DEFER →** means larger work, or work a later phase already owns. Give the home: a later phase
-  (`v1.2`…`v1.5`, `v2.1`, `v2.2`, `v3`), `backlog` (no phase owns it) or `cleanup (/simplify)`. Do **not** pull it
+  (`v1.2`…`v1.5`, `v2`, `v3`), `backlog` (no phase owns it) or `cleanup (/simplify)`. Do **not** pull it
   forward.
 
 Commit the doc as the plan (`docs: vA.B code review`) **and push it** if a remote exists. The review is worth
@@ -155,7 +167,7 @@ keeping even if the fix pass is interrupted.
 For each **FIX NOW** finding, in criticality order:
 
 1. Implement the fix following `CLAUDE.md` and ARCHITECTURE.md. Keep it minimal.
-2. **Add a regression test that would have caught the bug**, with Ollama and the Claude API mocked and the
+2. **Add a regression test that would have caught the bug**, with the Gemini and Claude APIs mocked and the
    fake receiver for the link. For a timing bug, drive the injected clock explicitly.
 3. **Validate:** lint and tests green. Commit only passing code.
 4. **Commit** one focused change per finding: `fix(<area>): … (code review #N)`, with the running model's

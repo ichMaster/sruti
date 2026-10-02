@@ -2,41 +2,80 @@
 
 ## Overview
 
+```mermaid
+flowchart LR
+  subgraph AIR["The air — HF bands"]
+    OPS["CW operators<br/>7.000–7.040 · 14.000–14.070 MHz<br/>NCDXF beacons 14.100 MHz"]
+  end
+
+  subgraph RXS["Public KiwiSDR — someone else's receiver"]
+    DEC["SDR + CW_decoder extension<br/>decodes at the receiver · one guest slot"]
+  end
+
+  subgraph NET["The internet — crossed outbound only"]
+    GEM["generativelanguage.googleapis.com<br/>Gemini API · https :443"]
+    API["api.anthropic.com<br/>Claude API · https :443"]
+    DIR["kiwisdr.com/public<br/>https :443"]
+  end
+
+  subgraph MAC["The managed Mac — every inbound destroyed, outbound only"]
+    subgraph CORE["sruti — one process"]
+      LINK["receiver link<br/>kiwiclient, reconnect w/ backoff"] --> SEG["segmenter<br/>pure, chars → pieces"]
+      SEG --> STORE["session store<br/>var/sessions/*.jsonl, manual switch"]
+      STORE --> PIECE["explain/piece — Gemini 3.8 Flash<br/>§2–3, English, ≤5 s per piece"]
+      STORE --> SESS["explain/session — Claude Opus 5.5<br/>§4, Ukrainian"]
+      STORE <--> APP["desktop app — pywebview window<br/>four sections · config panel + capture inspector · session switcher<br/>JS bridge to the core, no port"]
+    end
+  end
+
+  LANZ["The LAN — router, ich-picobox<br/>(unused in v1)"]
+
+  OPS -. "HF radio" .-> DEC
+  LINK -- "ws :8073 · SET tuning + decoder params only" --> DEC
+  DEC == "SND audio + EXT cw_chars / cw_wpm / cw_train" ==> LINK
+  PIECE -- "https :443 · per closed piece" --> GEM
+  SESS -- "https :443 · on the Explain press only" --> API
+  APP -. "pick a receiver (manual, v0–v1)" .-> DIR
+  LANZ -- "any inbound — destroyed by endpoint filtering" --x MAC
+  CORE -- "no transmit path — listen only" --x OPS
 ```
-Public KiwiSDR (receiver + its CW decoder)
-   ⇅  WebSocket opened from the Mac — audio channel (SND) + CW_decoder extension (EXT)
-sruti core on the Mac (Python)
-   receiver link → segmenter → session store
-         │              ├→ local explainer (Ollama, per piece)
-         │              └→ cloud explainer (Claude API, on the Explain action)
-         └→ core event stream → interface: TUI (v1) · web on localhost (v2)
-```
+
+The full annotated diagram — every port, every perimeter, the guards on each crossing — is
+[diagrams/ports-and-perimeters.html](diagrams/ports-and-perimeters.html); open it locally in a browser.
 
 One process, one receiver, one frequency at a time. Data flows one way — characters → pieces →
-explanations — every step is appended to the session store, and the interface renders what the core
-emits.
+explanations — every step is appended to the session store, and the app's window renders what the core
+emits. Nothing in sruti listens on any port.
 
-## Core and interfaces
+## Core and the desktop app
 
 The core is UI-agnostic. Components talk through an in-process **event stream** (an asyncio queue): the
-receiver emits characters, decoder status and link states; the segmenter emits pieces; the explainers emit
-explanations; the store persists everything it sees. An interface subscribes to the stream and sends back
-a small, fixed set of **commands**: `tune` (receiver, frequency — which also switches the session),
-`start`/`stop`, `explain` (the section-4 button), `open-session`, `set-config`.
+receiver emits characters, decoder status, link states and the raw extension messages; the segmenter
+emits pieces; the explainers emit explanations; the store persists everything it sees. The interface
+subscribes to the stream and sends back a small, fixed set of **commands**: `tune` (frequency in kHz,
+required; receiver optional, defaulting to the current one — tuning is what switches the session),
+`start`/`stop`, `explain` (the section-4 button), `open-session`, `rename-session`, `set-config`.
 
-Two interfaces, one core, the same events and commands:
+**The interface is a desktop app** — a native macOS window opened by
+[pywebview](https://pywebview.flowrl.com) on the system WebKit, launched with `uv run sruti app`:
 
-- **TUI (v1)** — a [Textual](https://textual.textualize.io) app in the terminal. The four sections
-  (§The four sections), the config panel and the session switcher are screens of one app.
-- **Web (v2)** — a FastAPI app bound to `127.0.0.1` **only**. The event stream reaches the browser over a
-  WebSocket; commands come back as HTTP POSTs; one static page (no build step) renders the same four
-  sections, config panel and session switcher. Binding to localhost keeps the managed Mac's constraint —
-  nothing listens on the LAN, the browser and the server are the same machine, and every external
-  connection is still opened outward. The TUI remains after v2; the interface is chosen at launch
-  (`sruti tui` / `sruti web`).
+- **The page** is one HTML file with inline CSS and JavaScript — no build step, no external resources,
+  light and dark themes from the system setting. It is handed to the window as a string, so no HTTP
+  server is started. Its visual design comes from Claude Design against
+  [design/BRIEF.md](design/BRIEF.md), which also fixes the page's event and command names.
+- **The bridge** is pywebview's JS bridge. The page calls the core commands as
+  `window.pywebview.api.<command>(…)`; Python pushes each core event into the page with `evaluate_js`.
+  This is the only channel between the window and the core: **no socket, no port, not even on
+  loopback**.
+- **What the window shows:** the four sections (§The four sections) in a 2×2 grid; a header with the
+  session name (click to rename), receiver, frequency, link status and the running costs; New session
+  (asks for a frequency, the receiver optional); the session switcher and the config panel with the
+  capture inspector as side panels.
+- **Headless mode** (`sruti listen --receiver <host:port> --freq <kHz>`) runs the same core with the
+  character stream printed to the terminal — for v1.1, before the app exists, and for debugging.
 
-Everything below the interface line — receiver, segmenter, store, explainers, glossary — is identical in
-both versions and never imports interface code.
+Everything below the window — receiver, segmenter, store, explainers, glossary — never imports the app's
+code. The window is a shell over the core: new behavior goes into the core, not into the page.
 
 ## Components
 
@@ -48,20 +87,30 @@ both versions and never imports interface code.
    receiver's API.
 2. **Segmenter (`segmenter`).** Pure logic: characters → pieces (§Pieces and sessions). It does not cut
    sessions; sessions are manual.
-3. **Session store (`store`).** One JSONL file per session under `var/sessions/`, append-only: every
-   character, piece and explanation with timestamps. The source of replays, test fixtures and new golden
-   examples. Lists saved sessions and replays one into the event stream, read-only.
+3. **Session store (`store`).** One JSONL file per session under `var/sessions/`, append-only: a `session`
+   header (auto name, renameable), then every character, piece and explanation with timestamps. The source
+   of replays, test fixtures and new golden examples. Lists saved sessions by name and replays one into
+   the event stream, read-only.
 4. **Glossary (`glossary/`).** Versioned data: Q-codes, prosigns, common abbreviations, per-language CW
-   habits (Italian `ET` for "and", `CAMBIO` for "over"), call-sign prefixes. Rendered into both prompts.
-5. **Local explainer (`explain/local`).** Per piece — buffered by the segmenter, never word by word as it
-   arrives: instructions + glossary + the session's last pieces + the new piece → Ollama `/api/chat` with
-   a JSON schema → `{gloss, message}`. `gloss` maps the raw text token by token (word, abbreviation,
-   Q-code, prosign, call sign → its expansion and meaning); `message` is the restored text assembled into
-   a natural translation. They fill sections 2 and 3.
-6. **Cloud explainer (`explain/cloud`).** Only when the user triggers **Explain**: the whole session →
-   Claude → a full explanation of what is going on, in the style of the reference answer. Never on a
-   timer, never automatic. It fills section 4.
-7. **Interfaces (`ui/tui`, later `ui/web`).** §Core and interfaces, §The four sections, §Configuration.
+   habits (Italian `ET` for "and", `CAMBIO` for "over"), call-sign prefix basics. Rendered **in full**
+   into both prompts as part of the stable prefix — it is compact (a few hundred entries, ~2–3K tokens),
+   and the stable prefix is exactly what gets cached: the Gemini API can cache it across pieces, the
+   Claude API across presses. Model memory is never trusted for expansions — a wrong gloss is fixed by
+   editing a data line, and both tiers speak the same terms. A full prefix→country table (CTY-scale,
+   thousands of rows) never goes into a prompt: that is a code lookup ("Later" in the ROADMAP), its result
+   injected per heard call sign.
+5. **Piece explainer (`explain/piece`).** Per piece — buffered by the segmenter, never word by word as it
+   arrives: instructions + glossary + the session's last raw pieces + the recent section-3 entries + the
+   new piece → Gemini 3.8 Flash with a response schema → `{gloss, action, message | rebuilt}`. `gloss`
+   maps the raw text token by token (word, abbreviation, Q-code, prosign, call sign → its expansion and
+   meaning); `action` is `none` (nothing new — a repeat), `append` (`message`: one natural entry, CW
+   repetitions collapsed, nothing invented) or `rebuild` (`rebuilt`: a replacement for the recent
+   entries it was shown, marked "⟲" on screen). They fill sections 2 and 3.
+6. **Session explainer (`explain/session`).** Only when the user triggers **Explain**: the whole session →
+   Claude Opus 5.5 → a full explanation of what is going on, in the style of the reference answer. Never
+   on a timer, never automatic. It fills section 4.
+7. **Desktop app (`ui/app`).** The pywebview window, its page and the bridge object that exposes the
+   core commands. §Core and the desktop app, §The four sections, §Configuration.
 
 ## The receiver
 
@@ -101,71 +150,123 @@ time; the link reports both and backs off from a busy receiver.
 
 ## The four sections
 
-The display contract, identical in the TUI (v1) and the web page (v2):
+The display contract of the app's window:
 
 | # | Section | Content | Source | When it updates |
 |---|---|---|---|---|
 | 1 | **Original text** | the decoded characters, as sent | the receiver's decoder (WebSDR) | live, character by character |
-| 2 | **Word by word** | each token of the piece → its expansion and meaning | local explainer `gloss` | when a piece closes |
-| 3 | **Message** | the piece restored and translated into natural text | local explainer `message` | together with section 2 |
-| 4 | **What is going on** | who talks to whom, what kind of exchange, the story so far | cloud explainer (Claude Opus 5.5) | **only when the user presses Explain** |
+| 2 | **Word by word** | each token of the piece → its expansion and meaning | piece explainer `gloss` (Gemini 3.8 Flash) | when a piece closes |
+| 3 | **Message** | what the operator actually said, as a natural message — never a word-for-word echo | piece explainer `message` (Gemini 3.8 Flash) | together with section 2 |
+| 4 | **What is going on** | who talks to whom, what kind of exchange, the story so far | session explainer (Claude Opus 5.5) | **only when the user presses Explain** |
 
-Sections 2 and 3 come from one local call per piece: the gloss shows *how* the raw text maps to meaning,
-token by token; the message is the final readable translation built from it. The local tier runs in near
-real time, but on the segmenter's buffer (the piece), never on each word as it arrives. Section 4 is
-whole-session and on demand; while a cloud call is running, section 4 says so, and a failed call leaves
-the previous explanation with an error note.
+The business logic, section by section:
 
-**Output languages:** sections 2 and 3 (the local tier) are in **English**; section 4 (the Opus
-explanation) is in **Ukrainian**. Both are configuration (`language.local = "en"`,
-`language.cloud = "uk"` by default). Call signs, Q-codes and quoted original text stay as sent in every
-section.
+**Section 1 — Original text.** Streams live, character by character, exactly as `cw_chars` arrives:
+prosigns as strings, unknown codes as the decoder's `[err]`, nothing cleaned up or guessed. Lulls (a piece
+closed by silence, an `SK`) are visible as spacing, not hidden. This section never waits for a model and
+never fails: whatever happens to the explainers, the raw text is already on screen and already in the
+session store.
+
+**Sections 2 and 3 — Word by word, and the Message.** One piece-tier call per **closed piece** produces
+both, and they carry different layers. The gloss is the **literal layer**: *how* the raw text maps to
+meaning, token by token, every token covered — words, abbreviations, Q-codes, prosigns, call signs,
+repeats and all. The message is the **communicative layer**: what the operator actually said, as one
+natural English message — never a word-for-word echo. CW repetition conventions collapse
+(`CQ CQ CQ DE IZ4PHG IZ4PHG` → "General call from IZ4PHG"; a report sent twice is stated once), fillers
+fold into the sentence, but nothing is added that wasn't sent, and a call sign still appears exactly as
+transmitted. Repetition is how CW fights noise; it is transport, not content — the gloss preserves it, the
+message drops it.
+
+The update cadence is therefore the piece-cut cadence, never a timer and never per word: a piece closes on
+an end-of-turn prosign standing alone, on 3 s of silence, or at 200 characters (all three from
+configuration), and the call has 5 s after that. In a lively exchange that means fresh gloss and message
+a few seconds after each handover; in unbroken sending, at worst every ~200 characters. If the piece tier
+fails or overruns — no key, no network, an error, past 5 s — these two sections simply stay empty for
+that piece; section 1 already shows the raw text, and the failure is logged, never shown as a guess.
+
+The whole section never travels to or from the model. Each call carries the glossary, the last raw
+pieces (ground truth), **the recent section-3 entries** (what the reader has already been told) and the
+new piece, and asks one question: *what, if anything, does this piece add or change for the reader?* The
+answer is the gloss block plus **one of three actions**, the model's choice:
+
+- **`none`** — the piece adds nothing (the same CQ call or beacon cycle again): no new line; section 3
+  bumps a repeat counter ("×n") on its latest entry.
+- **`append`** — one new message entry at the end. A piece that *changes* something arrives this way
+  too, as a corrective entry: "correction: the call sign is IU3FEJ, not IU3FE".
+- **`rebuild`** — rare, when the new piece reframes what the window already says (two stations turn out
+  to be one, the language is identified mid-conversation): a replacement for **exactly the recent
+  entries the model was given**, shown as one rewritten block with a visible "⟲ rewritten" mark. The
+  model can never touch anything beyond its window; reconciling the *whole* conversation remains the
+  session tier's job, on Explain.
+
+Prompts and outputs stay bounded either way, so the 5 s budget stays flat over a long session; whether
+the model uses `rebuild` judiciously is measured on the golden examples in v0.2. The gloss (section 2)
+appends always — it is the literal layer. The **store stays append-only** regardless of action: every
+response is one more explanation record, the screen is only a view of them, and a replay reproduces the
+same sequence of appends, counters and rebuilds. Section 4 is the opposite of all this: **rebuilt
+wholesale on every press**.
+
+**Section 4 — What is going on.** Updates **only when the user presses Explain**. The press sends the
+whole session (all pieces so far) to the session tier and renders the Ukrainian explanation; earlier
+content stays visible until the new answer replaces it. While the call runs, the section says so and the
+button is disabled (no concurrent calls — a second press waits for the first). A failed or timed-out call
+keeps the previous explanation and adds an error note. Without a Claude key the section permanently reads
+"Explain off — no Claude key" and the rest of the interface is unaffected. Each press's cost is shown with
+the answer and added to the session total. Nothing else — not a session switch, not a reconnect, not
+quitting — triggers this section.
+
+**Output languages:** sections 2 and 3 (the piece tier) are in **English**; section 4 (the session tier)
+is in **Ukrainian**. Both are configuration (`language.piece = "en"`, `language.session = "uk"` by
+default). Call signs, Q-codes and quoted original text stay as sent in every section.
 
 ## Pieces and sessions
 
 - A **piece** closes on an end-of-turn prosign standing alone (`K`, `KN`, `BK`, `AR`, `SK`), on 3 s
-  without characters, or at 200 characters. The piece is the local tier's buffer.
-- A **session is manual.** It begins when listening starts and ends only when the user switches or quits.
-  **Switching the session and retuning are the same action:** changing frequency or receiver closes the
-  current session file and opens a new one. `SK` and long silence close pieces and are shown as lulls, but
-  never end a session on their own.
+  without characters, or at 200 characters. The piece is the piece tier's buffer.
+- A **session is manual.** On launch, sruti connects with the `sruti.toml` defaults, and that opens the
+  first session. It ends only when the user switches or quits. **Switching the session and retuning are
+  the same action:** changing frequency or receiver closes the current session file and opens a new one.
+  `SK` and long silence close pieces and are shown as lulls, but never end a session on their own.
+- **Every session has a name.** On open it is auto-named from its facts — e.g.
+  `2026-10-02 21:40 · <receiver> · 14052 kHz` — and the user can rename it at any time from the app, while
+  listening or in the switcher ("Italian ragchew", "beacon check"). A rename appends a `session` record
+  (the latest name wins); the file is never renamed and nothing is rewritten.
 - **Every session is saved** — `var/sessions/<started>-<receiver>-<freq>.jsonl`, append-only. The session
-  switcher lists them; an opened past session replays into the same four sections, read-only.
+  switcher lists them by name, with receiver, frequency, date and piece count; an opened past session
+  replays into the same four sections, read-only.
 - The piece thresholds are configuration; these values are starting points, tuned on recorded sessions.
 
 Records — also the session-store lines:
 
 ```
+session      {session, t, receiver, freq_khz, name}   — first line of the file; appended again on rename, latest wins
 char         {session, t, ch}
 piece        {session, seq, receiver, freq_khz, wpm, t_start, t_end, cut: prosign|pause|length, raw}
-explanation  {session, tier: "local", piece_seq, model, gloss: [[token, meaning], …], message, latency_ms}
-explanation  {session, tier: "cloud", upto_seq, model, text, latency_ms, cost_usd}
+explanation  {session, tier: "piece", piece_seq, model, action: none|append|rebuild, gloss: [[token, meaning], …], message | rebuilt, latency_ms, cost_usd}
+explanation  {session, tier: "session", upto_seq, model, text, latency_ms, cost_usd}
 ```
 
 ## The two tiers
 
-| | Local tier | Cloud tier |
+| | Piece tier — Gemini 3.8 Flash | Session tier — Claude Opus 5.5 |
 |---|---|---|
-| When | every piece — buffered, never word by word | **only on the user's Explain action**; never on a timer, never automatic |
-| Input | glossary + the session's last 5 pieces + the new piece | glossary + the whole session |
-| Output | JSON `{gloss, message}`, in English → sections 2 and 3 | a full explanation in Ukrainian, reference-answer style → section 4 |
-| Where | Ollama on the Mac, `localhost:11434` | Claude API |
-| Budget | ≤ 5 s after the piece closes | ≤ 30 s per press; every call's cost is shown and summed per session |
-| When unavailable | the piece shows raw text only (sections 2–3 stay empty for it) | Explain reports the cloud tier is off; everything else works |
+| When | every closed piece — buffered, never word by word | **only on the user's Explain action**; never on a timer, never automatic |
+| Input | glossary + the last 5 raw pieces + the recent section-3 entries + the new piece | glossary + the whole session |
+| Output | JSON `{gloss, action, message/rebuilt}`, in English → sections 2 and 3 | a full explanation in Ukrainian, reference-answer style → section 4 |
+| Where | Gemini API, `generativelanguage.googleapis.com:443` | Claude API, `api.anthropic.com:443` |
+| Budget | ≤ 5 s after the piece closes; the running cost is summed per session and shown | ≤ 30 s per press; every call's cost is shown and summed per session |
+| When unavailable | the piece shows raw text only (sections 2–3 stay empty for it) | Explain reports the session tier is off; everything else works |
 
-**Local model — not chosen yet.** It must restore CW text in the operators' language (English, Italian,
-German…), gloss it token by token, translate the message into natural English, follow a JSON schema, fit
-in 32 GB next to other apps, and meet the 5 s budget.
-Measured so far (against the earlier two-field schema; the bar carries over):
+**Piece model.** Gemini 3.8 Flash (`gemini-3.8-flash`) through the Gemini API's `generateContent`, with
+structured output against the `{gloss, action, message/rebuilt}` schema (`responseSchema`), thinking level
+`low` and the default temperature. The key travels in the `x-goog-api-key` header, never in the URL.
+Prices: $0.75 / $3.75 per million input / output tokens through 2026-12-31, $1.50 / $7.50 from 2027-01-01
+(thinking tokens bill as output). At ~1–2.5K input tokens (depending on the glossary form) and ~0.6K
+output tokens per piece: ≈ $0.003–0.004 per piece, about $0.3–0.4 per hour of lively traffic
+(~100 pieces), doubling in 2027. This tier spends automatically, piece by piece, so its running cost is
+shown next to the Explain costs.
 
-| Model | Result on example 001 | Speed on the Mac |
-|---|---|---|
-| `qwen3:8b`, thinking off | **Fails.** Echoed the Italian instead of translating; read `IU3 F E JDE` as one call sign and "il grande Lino" as "a great line". | 20 tok/s; 14 s warm, 24 s cold |
-
-Next candidates, available in Ollama and untested: `gemma4:12b` (the strongest multilingual line),
-`qwen3.5:9b`. The choice is made in v0.2 against the golden examples.
-
-**Cloud model.** Claude Opus 5.5 (`claude-opus-5-5`, $4 / $20 per million input / output tokens) by
+**Session model.** Claude Opus 5.5 (`claude-opus-5-5`, $4 / $20 per million input / output tokens) by
 default, at low effort; Claude Fable 5.1 (`claude-fable-5-1`, $10 / $50) by configuration. At an estimated
 ~3K input and ~1K output tokens per press: Opus ≈ $0.03, Fable ≈ $0.08. The cost is user-controlled —
 one press, one call — and displayed per call and per session. Instructions and glossary form a stable
@@ -175,10 +276,10 @@ prefix for prompt caching across presses.
 
 - **The config file** (`sruti.toml`): receiver `host:port`, frequency, `cw_pboff` and the decoder
   parameters (training, threshold mode and value, word-space correction), the client identity (`sruti`),
-  the output languages (`language.local`, `language.cloud`), the segmenter thresholds, the model names and
-  budgets. **`.env` holds only the Claude API
-  key** (`ANTHROPIC_API_KEY`); no key ever lives in `sruti.toml` or in code.
-- **The config panel** (a TUI screen in v1, a page in v2) edits the connection settings and shows the
+  the output languages (`language.piece`, `language.session`), the segmenter thresholds, the model names
+  and budgets. **`.env` holds the two API keys** — `GEMINI_API_KEY` for the piece tier and
+  `ANTHROPIC_API_KEY` for the session tier; no key ever lives in `sruti.toml` or in code.
+- **The config panel** (a side panel of the app) edits the connection settings and shows the
   **capture inspector**: the live raw extension messages exactly as they arrive from the receiver's API
   (`cw_chars`, `cw_wpm`, `cw_train`, and anything unrecognized), next to how sruti parsed each one — so it
   is verifiable what has to be captured from the API and how, before and while listening. Changes are
@@ -186,21 +287,23 @@ prefix for prompt caching across presses.
 
 ## Hosts
 
-- **The Mac** (M1 Pro, 32 GB, managed): runs everything; Ollama is installed. Constraints: no SDR
-  software, inbound connections destroyed by endpoint filtering — which is why the v2 web interface binds
-  to `127.0.0.1` only — outbound HTTPS and WebSocket work.
+- **The Mac** (M1 Pro, 32 GB, managed): runs sruti from the repo with `uv`; both models run in the cloud.
+  Constraints: no SDR software, inbound connections destroyed by endpoint filtering — which is why nothing
+  in sruti listens on any port — outbound HTTPS and WebSocket work.
 - **`ich-picobox`** (Ubuntu 22.04, x86-64, 4 cores, 15 GB, no GPU, on the LAN): not used in v1. A possible
-  later home for the receiver link or own SDR hardware; too weak for the local model.
+  later home for the receiver link or own SDR hardware.
 
 ## Testing
 
 - **Unit** — segmenter rules, `cw_chars` decoding, glossary rendering, prompt assembly, output-schema
-  validation, session-store round-trip and replay, the interface's view models (pure presentation logic).
+  validation, session-store round-trip and replay, event serialization for the bridge.
 - **Fake receiver** — replays recorded extension messages from session files, so the whole pipeline runs
   without a network.
-- **TUI, headless** — the Textual app is driven by its test pilot over the fake receiver; no terminal
-  needed in CI.
-- **Models are mocked by default.** No test calls Ollama or the Claude API unless asked to.
+- **The app, without a window** — the bridge object is driven directly over the fake receiver, with a
+  fake window that records every `evaluate_js` call: commands in, events out, in order. No GUI in CI.
+- **The page** (opt-in) — rendered in a headless browser from a recorded event snapshot baked into it,
+  and checked by screenshot.
+- **Models are mocked by default.** No test calls the Gemini API or the Claude API unless asked to.
 - **Golden-example eval** (opt-in) — runs a real model over `specification/examples/`, records quality
   notes and latency; the basis of every model and prompt choice.
 - **Live check** (opt-in) — the NCDXF/IARU beacons on 14.100 MHz send known call signs at 22 WPM on a

@@ -9,12 +9,12 @@ Read these before planning work; they are the project's contract with itself.
 - **[specification/MISSION.md](specification/MISSION.md)** — what sruti is, for whom, the principles
   (incl. "listen only" and "never invent"), the non-goals, and the glossary. A request that violates a
   non-goal is a conversation, not a task.
-- **[specification/ARCHITECTURE.md](specification/ARCHITECTURE.md)** — the core/interface split, the
-  KiwiSDR protocol, the four-section display contract, pieces and sessions, the two model tiers, the
-  config panel, the hosts, and testing. Both interface architectures (TUI v1, web v2) live here.
-- **[specification/ROADMAP.md](specification/ROADMAP.md)** — versions v0 (groundwork) through v4, each
+- **[specification/ARCHITECTURE.md](specification/ARCHITECTURE.md)** — the core and the desktop app
+  (pywebview window, JS bridge, no port), the KiwiSDR protocol, the four-section display contract, pieces
+  and sessions, the two model tiers, the config panel, the hosts, and testing.
+- **[specification/ROADMAP.md](specification/ROADMAP.md)** — versions v0 (groundwork) through v3, each
   phase `vA.B` with Goal, Tasks, DoD and Tests. Build phases strictly in order and check each against its
-  DoD before moving on. v3 and v4 are not broken into phases yet.
+  DoD before moving on. v2 and v3 are not broken into phases yet.
 - **[specification/examples/](specification/examples/)** — golden examples; example 001 is the quality bar
   for the explainers.
 
@@ -22,42 +22,41 @@ Read these before planning work; they are the project's contract with itself.
 
 A private listening agent for one user: it tunes into a public KiwiSDR, reads the decoded Morse (CW) text,
 and shows four sections — the original text (live), a word-by-word gloss and an English message
-translation (local model via Ollama, per buffered piece), and a Ukrainian explanation of what is going on
+translation (Gemini 3.8 Flash, per buffered piece), and a Ukrainian explanation of what is going on
 (Claude Opus 5.5, **only when the user presses Explain**). Sessions are switched manually (switching =
-retuning), always saved, and replayable. v1 is a TUI; v2 is the same thing in the browser on localhost.
+retuning), always saved, and replayable. The interface is a desktop window (pywebview); nothing listens.
 So far the repo holds only the specification.
 
 Latest release: none yet.
 
 | Version | Phases | What it delivers |
 |---|---|---|
-| `v0` Groundwork | v0.1 text from the receiver · v0.2 choose the local model | spikes, recordings, golden examples, a model decision |
-| `v1` The listening agent (TUI) | v1.1 skeleton + receiver link · v1.2 pieces + session store · v1.3 local explainer · v1.4 the TUI · v1.5 cloud explainer | first real code in v1.1 |
-| `v2` The web interface | v2.1 local web server · v2.2 browser UI | the same four sections on `127.0.0.1` only |
-| `v3` Decoding on the Mac | (not yet phased) | a local CW decoder as a second text source |
-| `v4` Finding traffic | (open) | the agent chooses where to listen |
+| `v0` Groundwork | v0.1 text from the receiver · v0.2 prove the piece model | spikes, recordings, golden examples, the prompt and glossary form |
+| `v1` The listening agent (desktop app) | v1.1 skeleton + receiver link · v1.2 pieces + session store · v1.3 piece explainer · v1.4 the desktop app · v1.5 session explainer | first real code in v1.1 |
+| `v2` Decoding on the Mac | (not yet phased) | a local CW decoder as a second text source |
+| `v3` Finding traffic | (open) | the agent chooses where to listen |
 
 ## Layout and commands
 
 The components (ARCHITECTURE.md §Components): `receiver` (the KiwiSDR link on `kiwiclient`, also emitting
 the raw extension messages), `segmenter` (pure characters → pieces), `store` (append-only JSONL sessions
-under `var/sessions/`, listing and replay), `glossary/` (versioned data), `explain/local` (Ollama, gloss +
-message), `explain/cloud` (Claude API, on the Explain action), `ui/tui` (Textual, v1), `ui/web` (FastAPI
-on localhost, v2). The core never imports interface code.
+under `var/sessions/`, listing and replay), `glossary/` (versioned data), `explain/piece` (Gemini 3.8
+Flash, gloss + message per piece), `explain/session` (Claude Opus 5.5, on the Explain action), `ui/app`
+(the pywebview window, its page and the bridge). The core never imports the app's code.
 
 - Headless (from v1.1): `uv run sruti listen --receiver <host:port> --freq <kHz>`
-- The TUI (from v1.4): `uv run sruti tui` — four sections, the config panel with the capture inspector,
-  the session switcher.
-- The web interface (from v2.1): `uv run sruti web` — bound to `127.0.0.1` only.
+- The app (from v1.4): `uv run sruti app` — the window with the four sections, the config panel with the
+  capture inspector, the session switcher. The working prototype is `poc/desktop/`.
 - Configuration lives in `sruti.toml`; recordings and session files are local data (`var/`, gitignored);
   curated recordings become fixtures and golden examples under `specification/examples/`.
-- `.env` (gitignored) holds only the Claude API key. Never print it or commit it; the agent must run fully
-  without it (local-only).
+- `.env` (gitignored) holds the two API keys: `GEMINI_API_KEY` (piece tier) and `ANTHROPIC_API_KEY`
+  (session tier). Never print it or commit it. Without a key its tier is off and everything else keeps
+  working.
 
 ## Acceptance gates
 
-Automated gates need no network: tests mock Ollama and the Claude API, drive the receiver link with the
-fake receiver (replayed recordings), drive the TUI headless (Textual pilot), and inject the clock. Nothing
+Automated gates need no network: tests mock the Gemini and Claude APIs, drive the receiver link with the
+fake receiver (replayed recordings), drive the app's bridge with a fake window, and inject the clock. Nothing
 reaches a receiver or a paid API.
 
 | Gate | Command | When |
@@ -72,7 +71,7 @@ reaches a receiver or a paid API.
 - **Manual gates:** the ROADMAP DoD items marked **Manual (owner)** need a live receiver, a real model run
   or a quality judgment against the reference answer.
   - Claude may run the offline checks (replays, fixtures) itself.
-  - Anything that connects to a public receiver, calls Ollama or the Claude API for real, or judges
+  - Anything that connects to a public receiver, calls the Gemini or Claude API for real, or judges
     explanation quality is done or confirmed by the owner.
   - A manual check counts as passed only once the owner confirms it.
 
@@ -86,20 +85,23 @@ The full mechanisms live in ARCHITECTURE.md; these are the invariants most often
   respect its time limits, disconnect when idle.
 - **Never invent.** Unreadable text is `[...]`, not guessed; a call sign is never "corrected" into a
   different call sign; the decoder's `[err]` is handled; uncertainty is said out loud.
-- **The cloud tier runs only on the user's Explain action.** Never on a timer, never automatically — not
-  at session end, not on reconnect. Every call's cost is shown and summed per session.
-- **The local tier is buffered by piece**, never called word by word as characters arrive.
-- **Sessions are manual and always saved.** A session ends only on retune or quit; switching the session
-  *is* retuning; `SK` and silence close pieces, never sessions; a past session is replayed read-only and
-  never rewritten.
+- **The session tier runs only on the user's Explain action.** Never on a timer, never automatically —
+  not at session end, not on reconnect. Every call's cost is shown and summed per session.
+- **The piece tier is buffered by piece**, never called word by word as characters arrive. It spends
+  automatically, so its running cost is summed per session and shown.
+- **Sessions are manual, named, and always saved.** A session ends only on retune or quit; switching the
+  session *is* retuning; `SK` and silence close pieces, never sessions; a past session is replayed
+  read-only and never rewritten. Every session is auto-named on open and renameable from the app at any
+  time — a rename appends a `session` record and never renames the file.
 - **Languages:** sections 2–3 (gloss, message) in English; section 4 (the explanation) in Ukrainian; both
   from configuration. Call signs, Q-codes and quoted original text stay as sent.
-- **Degrade, don't crash.** Ollama down → the piece shows raw text only; no API key → Explain reports the
-  cloud tier is off; a dropped link reconnects with backoff; a failed model call never kills the listening
-  loop.
-- **The core never imports interface code.** The TUI and the web page consume the same events and send the
-  same commands; new behavior goes into the core, not into an interface.
-- **The web interface binds to `127.0.0.1` only** — never to a LAN interface. A test pins the binding.
+- **Degrade, don't crash.** No Gemini key, no network or a failed call → the piece shows raw text only; no
+  Claude key → Explain reports it is off; a dropped link reconnects with backoff; a failed model call never
+  kills the listening loop.
+- **The core never imports the app's code.** The window consumes the core's events and sends its commands;
+  new behavior goes into the core, not into the page.
+- **Nothing listens.** The page is handed to the pywebview window as a string and talks to Python only
+  through the JS bridge — no HTTP server, no port, not even on loopback. A test pins it.
 - **The glossary is data.** Q-codes, prosigns and abbreviations live in `glossary/` and are rendered into
   the prompts — never hardcoded, never left to model memory.
 - **Keep decisions pure**: the piece cut rules, `cw_chars` decoding, prompt assembly, schema validation,
@@ -107,8 +109,9 @@ The full mechanisms live in ARCHITECTURE.md; these are the invariants most often
   clock.
 - **Everything is logged to the session store** — every character, piece and explanation with timestamps —
   and a session replays to the same text.
-- **Secrets stay out**: never print `.env`; the API key never goes into argv, logs, commits or issue
-  comments. To check a value is set, test it without echoing it (`grep -q '^ANTHROPIC_API_KEY=.' .env`).
+- **Secrets stay out**: never print `.env`; an API key never goes into argv, logs, commits, issue comments
+  or a URL (the Gemini key travels in the `x-goog-api-key` header). To check a value is set, test it without
+  echoing it (`grep -q '^GEMINI_API_KEY=.' .env`).
 
 ## Contracts
 
@@ -116,14 +119,15 @@ Changing any of these updates ARCHITECTURE.md and the test that pins it, in the 
 
 - the **four-section display contract**: what each section shows, which tier feeds it, and when it updates
   (ARCHITECTURE.md §The four sections);
-- the **record shapes** (`char`, `piece`, the two `explanation` forms) — also the session-store lines
-  (§Pieces and sessions);
+- the **record shapes** (the `session` header, `char`, `piece`, the two `explanation` forms) — also the
+  session-store lines (§Pieces and sessions);
 - the **segmenter rules and thresholds** (end-of-turn prosigns, pause, length cap), with the thresholds
   living in configuration;
-- the **local explainer's JSON schema** `{gloss, message}`;
-- the **core commands** an interface may send (`tune`, `start`/`stop`, `explain`, `open-session`,
-  `set-config`);
-- the **CLI**: `sruti listen --receiver <host:port> --freq <kHz>`, `sruti tui`, `sruti web`;
+- the **piece explainer's JSON schema** `{gloss, action, message/rebuilt}` and its three actions (none ·
+  append · rebuild-of-window);
+- the **core commands** the page may send through the bridge (`tune`, `start`/`stop`, `explain`, `open-session`,
+  `rename-session`, `set-config`);
+- the **CLI**: `sruti listen --receiver <host:port> --freq <kHz>`, `sruti app`;
 - the **session store layout** (`var/sessions/<started>-<receiver>-<freq>.jsonl`, append-only);
 - the **KiwiSDR extension messages** sruti sends and reads (the table in ARCHITECTURE.md §The receiver);
 - the **two-tier table** (when each tier runs, its inputs, languages, budgets and fallbacks).
@@ -149,9 +153,10 @@ Changing any of these updates ARCHITECTURE.md and the test that pins it, in the 
 ## Constraints
 
 - The Mac is managed: no SDR software, no inbound connections (endpoint filtering destroys them); every
-  connection is opened outward (receiver WebSocket, Ollama on `localhost:11434`, the Claude API), and the
-  v2 web server is localhost-only.
+  connection is opened outward (receiver WebSocket, the Gemini API, the Claude API), and nothing in sruti
+  listens on any port. sruti runs from the repo with `uv`; a packaged `.app` is not planned.
 - Public receivers have few slots; recordings exist so that development and tests don't occupy one.
-- The cloud tier costs money (Opus ≈ $0.03 per press). It runs only on the user's action, the cost is
-  always visible, and no test or gate ever calls a paid API.
+- Both tiers cost money: the piece tier ≈ $0.003 per piece (≈ $0.3 per hour of lively traffic, doubling
+  in 2027), the session tier ≈ $0.03 per Explain press. The costs are always visible, and no test or gate
+  ever calls a paid API.
 - `kiwiclient`'s license must be checked (v0.1) before the project depends on it.

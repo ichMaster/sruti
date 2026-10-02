@@ -16,7 +16,7 @@ E FACCIO CW MA IL MIO MAESTRO [err]L INO CIRCA 7 ANNI HO COMOS[err]IUNO IL GRAND
 
 ## Reference answer — Claude Fable 5.1
 
-This is the bar for **section 4** (the on-demand, whole-session explanation, in Ukrainian). The local
+This is the bar for **section 4** (the on-demand, whole-session explanation, in Ukrainian). The piece
 tier's outputs for the same text — the section-2 word-by-word gloss and the section-3 English message —
 are judged on the same substance: the mapping of every abbreviation this answer explains, and the
 translated message it contains, rendered in English.

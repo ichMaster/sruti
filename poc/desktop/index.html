@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sruti</title>
+<style>
+/* Layout: a header bar over a 2×2 grid of the four sections; sessions and config slide in from the right. */
+:root {
+  --bg: #eef1f4; --panel: #ffffff; --ink: #17202a; --muted: #5b6a79; --line: #d3dae1;
+  --accent: #b8650f; --accent-ink: #ffffff; --signal: #1e7a5a; --danger: #b13a2c; --soft: #f5f7f9;
+  --ui: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  --serif: ui-serif, "New York", Georgia, serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1318; --panel: #151c23; --ink: #e3e8ed; --muted: #8c9bab; --line: #283440;
+    --accent: #f0a043; --accent-ink: #1b1206; --signal: #4cc28b; --danger: #e8705c; --soft: #1a222b;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.5 var(--ui);
+  display: grid; grid-template-rows: auto auto 1fr; overflow: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- header bar ---- */
+.bar {
+  display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.mark { font: italic 600 20px/1 var(--serif); letter-spacing: .01em; }
+.sess { display: grid; min-width: 0; }
+.sess-name {
+  background: none; border: 0; padding: 0; text-align: left; font-weight: 600; font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46ch;
+}
+.sess-name:hover { color: var(--accent); }
+.sess-meta { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rename { font: 600 14px var(--ui); padding: 2px 6px; border: 1px solid var(--accent); border-radius: 4px;
+  background: var(--soft); color: var(--ink); width: 38ch; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 99px;
+  background: var(--soft); border: 1px solid var(--line); font-size: 12px; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.chip[data-state="listening"] .dot { background: var(--signal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 25%, transparent); }
+.chip[data-state="lull"] .dot { background: var(--accent); }
+.chip[data-state="saved"] .dot { background: var(--muted); }
+.spacer { flex: 1; }
+.costs { display: flex; gap: 14px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.costs b { color: var(--ink); font-weight: 600; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 12px;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:disabled { opacity: .55; cursor: default; }
+.btn:disabled { cursor: default; }
+
+/* ---- read-only banner ---- */
+.banner {
+  display: flex; align-items: center; gap: 12px; padding: 7px 16px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel)); border-bottom: 1px solid var(--line);
+}
+.banner b { font-weight: 600; }
+
+/* ---- the four sections ---- */
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  gap: 12px; padding: 12px 16px 16px; min-height: 0;
+}
+.panel {
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+}
+.panel > header {
+  display: flex; align-items: center; gap: 9px; padding: 8px 12px; border-bottom: 1px solid var(--line);
+}
+.num {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  border: 1px solid var(--line); font: 11px var(--mono); color: var(--muted);
+}
+.panel h2 { margin: 0; font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
+.src { margin-left: auto; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+.body { flex: 1; overflow: auto; padding: 12px 14px; min-height: 0; }
+.empty { color: var(--muted); }
+
+/* 1 — original text */
+.raw p { margin: 0 0 4px; font: 15px/1.75 var(--mono); letter-spacing: .02em; word-break: break-word; }
+.raw mark.err { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); border-radius: 3px; padding: 0 2px; }
+.caret { display: inline-block; width: .6em; height: 1.05em; vertical-align: -2px; background: var(--accent); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.cut {
+  display: flex; align-items: center; gap: 8px; margin: 6px 0 12px; color: var(--muted);
+  font: 10.5px var(--mono); letter-spacing: .05em; text-transform: uppercase;
+}
+.cut::after { content: ""; flex: 1; border-top: 1px dashed var(--line); }
+.endnote { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+/* 2 — word by word */
+.gloss { margin-bottom: 14px; }
+.ghead { display: flex; gap: 10px; color: var(--muted); font-size: 11.5px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.ghead b { color: var(--ink); font-weight: 600; }
+.gloss table { border-collapse: collapse; width: 100%; }
+.gloss td { padding: 2px 10px 2px 0; vertical-align: top; border-top: 1px solid var(--soft); }
+.gloss td.tok { font: 12.5px var(--mono); white-space: nowrap; color: var(--accent); width: 1%; }
+.note { color: var(--muted); font-style: italic; margin-bottom: 12px; }
+
+/* 3 — message */
+.msgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.msgs li { font-size: 14.5px; line-height: 1.55; }
+.msgs .meta { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.badge { display: inline-block; font-size: 10.5px; padding: 0 6px; border-radius: 99px; border: 1px solid var(--line); margin-left: 6px; }
+.badge.rw { color: var(--accent); border-color: var(--accent); }
+
+/* 4 — what is going on */
+.explain p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; max-width: 72ch; }
+.explain blockquote { margin: 0 0 10px; padding-left: 12px; border-left: 2px solid var(--accent); font-size: 14px; line-height: 1.6; }
+.explain .foot { color: var(--muted); font-size: 11.5px; border-top: 1px solid var(--line); padding-top: 8px; font-variant-numeric: tabular-nums; }
+.explain .status { color: var(--muted); margin-bottom: 10px; }
+
+/* ---- popover and drawers ---- */
+.pop {
+  position: absolute; top: 54px; right: 16px; width: 300px; z-index: 30; display: grid; gap: 10px;
+  padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.18);
+}
+.pop label, .form label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.pop input, .form input, .form select {
+  font: 13px var(--ui); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--soft); color: var(--ink);
+}
+.row { display: flex; gap: 8px; justify-content: flex-end; }
+.error { color: var(--danger); font-size: 12px; }
+.scrim { position: fixed; inset: 0; background: rgba(8,12,16,.35); z-index: 20; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 92vw); z-index: 25;
+  background: var(--panel); border-left: 1px solid var(--line); display: grid; grid-template-rows: auto 1fr;
+}
+.drawer > header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.drawer h3 { margin: 0; font-size: 14px; }
+.drawer .content { overflow: auto; padding: 14px 16px; display: grid; gap: 16px; align-content: start; }
+.slist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.slist li { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.slist li.current { border-color: var(--accent); }
+.slist .grow { flex: 1; min-width: 0; }
+.slist .n { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slist .m { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.pill { font-size: 10.5px; padding: 1px 7px; border-radius: 99px; background: var(--signal); color: var(--panel); font-weight: 600; }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.form .wide { grid-column: 1 / -1; }
+.section-title { font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; margin: 0; }
+.hint { color: var(--muted); font-size: 12px; margin: 0; }
+.inspector-box { border: 1px solid var(--line); border-radius: 8px; max-height: 340px; overflow: auto; }
+.inspector { border-collapse: collapse; width: 100%; font: 11.5px var(--mono); }
+.inspector th { position: sticky; top: 0; background: var(--panel); text-align: left; font: 600 10.5px var(--ui); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.inspector td { padding: 3px 8px; border-bottom: 1px solid var(--soft); white-space: nowrap; }
+.inspector td.dir-out { color: var(--accent); }
+.inspector td.dir-in { color: var(--signal); }
+.inspector td.p { font-family: var(--ui); color: var(--muted); white-space: normal; }
+@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <span class="mark">śruti</span>
+  <div class="sess">
+    <button class="sess-name" id="sessName" title="Rename this session">—</button>
+    <span class="sess-meta" id="sessMeta">connecting…</span>
+  </div>
+  <span class="chip" id="status" data-state="idle"><span class="dot"></span><span id="statusText">starting</span></span>
+  <span class="spacer"></span>
+  <span class="costs"><span>Gemini <b id="costPiece">$0.0000</b></span><span>Opus <b id="costSession">$0.00</b></span></span>
+  <button class="btn" id="btnNew">New session</button>
+  <button class="btn" id="btnSessions">Sessions</button>
+  <button class="btn" id="btnConfig">Config</button>
+</header>
+
+<div class="banner" id="banner" hidden>
+  <span>Viewing a saved session: <b id="bannerName"></b> · read-only</span>
+  <span class="spacer"></span>
+  <button class="btn" id="btnLive">Back to live</button>
+</div>
+
+<main class="grid">
+  <section class="panel">
+    <header><span class="num">1</span><h2>Original text</h2><span class="src">KiwiSDR CW decoder</span></header>
+    <div class="body raw" id="p1"></div>
+  </section>
+  <section class="panel">
+    <header><span class="num">2</span><h2>Word by word</h2><span class="src" id="src2">Gemini 3.8 Flash</span></header>
+    <div class="body" id="p2"></div>
+  </section>
+  <section class="panel">
+    <header><span class="num">3</span><h2>Message</h2><span class="src" id="src3">Gemini 3.8 Flash</span></header>
+    <div class="body"><ol class="msgs" id="p3"></ol></div>
+  </section>
+  <section class="panel">
+    <header><span class="num">4</span><h2>What is going on</h2><span class="src">Claude Opus 5.5</span>
+      <button class="btn primary" id="btnExplain">Explain</button></header>
+    <div class="body explain" id="p4"></div>
+  </section>
+</main>
+
+<form class="pop" id="newPop" hidden>
+  <strong>New session</strong>
+  <label>Frequency, kHz <input id="newFreq" type="number" step="0.1" min="100" max="30000" required></label>
+  <label>Receiver, host:port (optional) <input id="newRecv" type="text" autocomplete="off"></label>
+  <span class="error" id="newErr" hidden></span>
+  <div class="row"><button type="button" class="btn" id="newCancel">Cancel</button><button type="submit" class="btn primary">Tune</button></div>
+</form>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<aside class="drawer" id="drawerSessions" hidden>
+  <header><h3>Sessions</h3><span class="spacer"></span><button class="btn" data-close>Close</button></header>
+  <div class="content">
+    <p class="hint">Every session is saved. Switching the session is retuning: use New session. Open a past session to replay it read-only.</p>
+    <ul class="slist" id="slist"></ul>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawerConfig" hidden>
+  <header><h3>Receiver connection</h3><span class="spacer"></span><button class="btn" data-close>Close</button></header>
+  <div class="content">
+    <form class="form" id="cfgForm">
+      <label class="wide">Receiver, host:port <input name="receiver" type="text"></label>
+      <label>Frequency, kHz <input name="freq_khz" type="number" step="0.1"></label>
+      <label>Tone offset cw_pboff, Hz <input name="cw_pboff" type="number"></label>
+      <label>Speed cw_wpm (0 = auto) <input name="wpm" type="number" min="0"></label>
+      <label>Training cw_start <input name="training" type="number" min="0"></label>
+      <label>Threshold <input name="threshold" type="text"></label>
+      <label>Word-space correction
+        <select name="word_space_correction"><option value="true">on</option><option value="false">off</option></select></label>
+      <label>Piece pause, s <input name="piece_pause_s" type="number" step="0.5"></label>
+      <label>Piece max, characters <input name="piece_max_chars" type="number"></label>
+      <label>Sections 2–3 language <input name="language_piece" type="text"></label>
+      <label>Section 4 language <input name="language_session" type="text"></label>
+      <div class="wide row"><span class="hint" id="cfgNote"></span><span class="spacer"></span><button type="submit" class="btn primary">Save</button></div>
+    </form>
+    <div>
+      <p class="section-title">Capture inspector</p>
+      <p class="hint">Raw extension messages as they cross the receiver WebSocket, next to how sruti parsed each one.</p>
+    </div>
+    <div class="inspector-box" id="inspBox">
+      <table class="inspector"><thead><tr><th>Time</th><th></th><th>Raw message</th><th>Parsed</th></tr></thead><tbody id="insp"></tbody></table>
+    </div>
+  </div>
+</aside>
+
+<!--PREVIEW-->
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const api = () => (window.pywebview && window.pywebview.api) || null;
+  const money = (v, digits) => "$" + v.toFixed(digits);
+
+  const state = { init: null, live: null, readOnly: false, viewingId: null, rendered: 0, selftest: false, explaining: false };
+  let view;
+
+  function stick(box, fn) {
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 48;
+    fn();
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+
+  function resetView() {
+    view = { para: null, msgs: [], cost: { piece: 0, session: 0 }, ended: false };
+    $("p1").replaceChildren(); $("p2").replaceChildren(); $("p3").replaceChildren();
+    $("p4").replaceChildren(el("p", "empty", "Press Explain for the whole picture of this session, in Ukrainian."));
+    $("p2").append(el("p", "empty", "Each piece gets its word-by-word gloss when it closes."));
+    $("p3").append(el("li", "empty", "The message of each piece appears here."));
+    caret();
+    paintCosts();
+  }
+
+  function caret() {
+    $("p1").querySelector(".caret")?.remove();
+    if (state.readOnly || view.ended) return;
+    const target = view.para || $("p1");
+    target.append(el("span", "caret"));
+  }
+
+  function paintCosts() {
+    $("costPiece").textContent = money(view.cost.piece, 4);
+    $("costSession").textContent = money(view.cost.session, 2);
+  }
+
+  function setHeader(s, saved) {
+    $("sessName").textContent = s.name;
+    $("sessMeta").textContent = `${s.receiver} · ${s.freq_khz} kHz · started ${s.started.replace("T", " ")}`;
+    if (saved) setStatus({ state: "saved" });
+  }
+
+  function setStatus(ev) {
+    const chip = $("status");
+    chip.dataset.state = ev.state;
+    const label = { listening: "listening", lull: "lull — piece closing", ended: "recording ended", saved: "saved session" }[ev.state] || ev.state;
+    $("statusText").textContent = ev.wpm && ev.state !== "saved" ? `${label} · ${ev.wpm} WPM` : label;
+  }
+
+  function setExplaining(on) {
+    state.explaining = on;
+    const b = $("btnExplain");
+    b.disabled = on || state.readOnly;
+    b.textContent = on ? "Explaining…" : "Explain";
+    b.title = state.readOnly ? "Explain works on the live session" : "";
+    if (on) {
+      $("p4").querySelector(".status")?.remove();
+      $("p4").prepend(el("p", "status", "Sending the whole session to Claude Opus 5.5…"));
+    }
+  }
+
+  // ---- rendering one stored event ----
+  function render(ev) {
+    switch (ev.type) {
+      case "char": return appendChar(ev.ch);
+      case "piece": return closePiece(ev);
+      case "explanation": return ev.tier === "piece" ? pieceExplanation(ev) : sessionExplanation(ev);
+      case "end": return endRecording();
+    }
+  }
+
+  function appendChar(ch) {
+    const box = $("p1");
+    stick(box, () => {
+      if (!view.para) { view.para = el("p"); box.append(view.para); }
+      if (ch === "[err]") view.para.append(el("mark", "err", "[err]"));
+      else view.para.append(document.createTextNode(ch));
+      caret();
+    });
+  }
+
+  function closePiece(ev) {
+    const box = $("p1");
+    stick(box, () => {
+      view.para = null;
+      box.append(el("div", "cut", `piece ${ev.seq} · closed on ${ev.cut}`));
+      caret();
+    });
+  }
+
+  function endRecording() {
+    view.ended = true;
+    caret();
+    $("p1").append(el("p", "endnote", "End of the recording."));
+  }
+
+  function pieceExplanation(ev) {
+    const p2 = $("p2"), p3 = $("p3");
+    p2.querySelector(".empty")?.remove();
+    p3.querySelector(".empty")?.remove();
+    stick(p2, () => {
+      if (ev.error) { p2.append(el("p", "note", `Piece ${ev.piece_seq}: no explanation (${ev.error}) — raw text only.`)); return; }
+      const block = el("div", "gloss");
+      const head = el("div", "ghead");
+      head.append(el("b", null, `Piece ${ev.piece_seq}`), el("span", null, `${(ev.latency_ms / 1000).toFixed(1)} s`), el("span", null, money(ev.cost_usd, 4)));
+      const table = el("table");
+      for (const [tok, meaning] of ev.gloss || []) {
+        const tr = el("tr");
+        tr.append(el("td", "tok", tok), el("td", null, meaning));
+        table.append(tr);
+      }
+      block.append(head, table);
+      p2.append(block);
+    });
+    if (ev.error) return;
+    view.cost.piece += ev.cost_usd || 0;
+    paintCosts();
+    const box = p3.parentElement;
+    stick(box, () => {
+      if (ev.action === "none" && view.msgs.length) {
+        view.msgs[view.msgs.length - 1].count += 1;
+      } else if (ev.action === "rebuild" && ev.rebuilt) {
+        view.msgs = ev.rebuilt.map((text) => ({ text, seq: ev.piece_seq, count: 1, rewritten: true }));
+      } else if (ev.message) {
+        view.msgs.push({ text: ev.message, seq: ev.piece_seq, count: 1, rewritten: false });
+      }
+      paintMessages();
+    });
+  }
+
+  function paintMessages() {
+    const list = $("p3");
+    list.replaceChildren();
+    for (const m of view.msgs) {
+      const li = el("li", null, m.text);
+      const meta = el("span", "meta", `piece ${m.seq}`);
+      if (m.count > 1) meta.append(el("span", "badge", `×${m.count}`));
+      if (m.rewritten) meta.append(el("span", "badge rw", "⟲ rewritten"));
+      li.append(meta);
+      list.append(li);
+    }
+  }
+
+  function sessionExplanation(ev) {
+    const box = $("p4");
+    box.replaceChildren();
+    for (const para of ev.paragraphs || []) {
+      box.append(para.startsWith("«") ? el("blockquote", null, para) : el("p", null, para));
+    }
+    const foot = `Claude Opus 5.5 · up to piece ${ev.upto_seq} · ${(ev.latency_ms / 1000).toFixed(1)} s · ${money(ev.cost_usd, 2)}`
+      + (ev.simulated ? " · PoC: example 001 reference answer, not a live call" : "");
+    box.append(el("div", "foot", foot));
+    box.scrollTop = 0;
+    view.cost.session += ev.cost_usd || 0;
+    paintCosts();
+  }
+
+  // ---- the event stream from Python ----
+  function onEvent(ev) {
+    if (ev.type === "raw") return addRaw(ev);
+    if (ev.type === "explain_state") return setExplaining(ev.state === "running");
+    if (ev.type === "status") { if (!state.readOnly && ev.session === state.live?.id) setStatus(ev); return; }
+    if (ev.type === "session") {
+      if (ev.renamed) {
+        if (state.live?.id === ev.id) state.live.name = ev.name;
+        if ((state.readOnly ? state.viewingId : state.live?.id) === ev.id) $("sessName").textContent = ev.name;
+        if (state.readOnly && state.viewingId === ev.id) $("bannerName").textContent = ev.name;
+      } else {
+        state.live = ev;
+        if (!state.readOnly) { resetView(); setHeader(ev); }
+      }
+      if (!$("drawerSessions").hidden) loadSessions();
+      return;
+    }
+    if (state.readOnly || ev.session !== state.live?.id) return;
+    render(ev);
+    if (state.selftest && ++state.rendered % 20 === 0) api()?.ack(state.rendered);
+  }
+
+  function addRaw(ev) {
+    const box = $("inspBox"), body = $("insp");
+    stick(box, () => {
+      const tr = el("tr");
+      tr.append(el("td", null, ev.t), el("td", ev.dir === "→" ? "dir-out" : "dir-in", ev.dir), el("td", null, ev.msg), el("td", "p", ev.parsed));
+      body.append(tr);
+      while (body.rows.length > 400) body.deleteRow(0);
+    });
+  }
+
+  // ---- sessions ----
+  async function loadSessions() {
+    const sessions = (await api()?.list_sessions()) || [];
+    const list = $("slist");
+    list.replaceChildren();
+    for (const s of sessions) {
+      const li = el("li", s.id === state.live?.id ? "current" : "");
+      const grow = el("div", "grow");
+      grow.append(el("div", "n", s.name), el("div", "m", `${s.receiver} · ${s.freq_khz} kHz · ${s.started.replace("T", " ")} · ${s.pieces} pieces`));
+      li.append(grow);
+      if (s.id === state.live?.id) li.append(el("span", "pill", "live"));
+      const open = el("button", "btn", s.id === state.live?.id ? "Show" : "Open");
+      open.onclick = () => (s.id === state.live?.id ? backToLive() : openSaved(s));
+      const rename = el("button", "btn", "Rename");
+      rename.onclick = async () => {
+        const input = el("input", "rename"); input.value = s.name;
+        grow.replaceChildren(input); input.focus(); input.select();
+        input.onkeydown = async (e) => {
+          if (e.key === "Enter") { await api()?.rename_session(s.id, input.value); loadSessions(); }
+          if (e.key === "Escape") loadSessions();
+        };
+      };
+      li.append(open, rename);
+      list.append(li);
+    }
+  }
+
+  async function openSaved(s) {
+    const events = (await api()?.session_events(s.id)) || [];
+    state.readOnly = true; state.viewingId = s.id;
+    resetView();
+    events.forEach(render);
+    setHeader(s, true);
+    $("bannerName").textContent = s.name;
+    $("banner").hidden = false;
+    setExplaining(state.explaining);
+    closeDrawers();
+  }
+
+  async function backToLive() {
+    state.readOnly = false; state.viewingId = null;
+    const events = (await api()?.session_events(state.live.id)) || [];
+    resetView();
+    events.forEach(render);
+    setHeader(state.live);
+    $("banner").hidden = true;
+    setExplaining(state.explaining);
+    closeDrawers();
+  }
+
+  // ---- header controls ----
+  $("sessName").onclick = () => {
+    const id = state.readOnly ? state.viewingId : state.live?.id;
+    if (!id) return;
+    const button = $("sessName");
+    const input = el("input", "rename"); input.value = button.textContent;
+    button.replaceWith(input); input.focus(); input.select();
+    const done = async (save) => {
+      if (save && input.value.trim()) await api()?.rename_session(id, input.value);
+      input.replaceWith(button);
+      if (save && input.value.trim()) button.textContent = input.value.trim();
+    };
+    input.onkeydown = (e) => { if (e.key === "Enter") done(true); if (e.key === "Escape") done(false); };
+    input.onblur = () => done(false);
+  };
+
+  $("btnExplain").onclick = async () => {
+    if (state.readOnly || state.explaining) return;
+    setExplaining(true);
+    const r = await api()?.explain();
+    if (r && !r.ok && r.reason !== "busy") setExplaining(false);
+  };
+
+  $("btnNew").onclick = () => {
+    const pop = $("newPop");
+    pop.hidden = !pop.hidden;
+    $("newErr").hidden = true;
+    $("newRecv").placeholder = state.live?.receiver || "";
+    if (!pop.hidden) $("newFreq").focus();
+  };
+  $("newCancel").onclick = () => { $("newPop").hidden = true; };
+  $("newPop").onsubmit = async (e) => {
+    e.preventDefault();
+    const freq = parseFloat($("newFreq").value);
+    if (!(freq >= 100 && freq <= 30000)) { $("newErr").textContent = "Enter a frequency between 100 and 30000 kHz."; $("newErr").hidden = false; return; }
+    $("newPop").hidden = true;
+    state.readOnly = false; state.viewingId = null; $("banner").hidden = true;
+    await api()?.tune(freq, $("newRecv").value.trim() || null);
+    $("newFreq").value = ""; $("newRecv").value = "";
+  };
+  $("btnLive").onclick = backToLive;
+
+  function openDrawer(id) { closeDrawers(); $(id).hidden = false; $("scrim").hidden = false; }
+  function closeDrawers() { $("drawerSessions").hidden = true; $("drawerConfig").hidden = true; $("scrim").hidden = true; }
+  $("scrim").onclick = closeDrawers;
+  document.querySelectorAll("[data-close]").forEach((b) => (b.onclick = closeDrawers));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeDrawers(); $("newPop").hidden = true; } });
+  $("btnSessions").onclick = () => { openDrawer("drawerSessions"); loadSessions(); };
+  $("btnConfig").onclick = async () => {
+    openDrawer("drawerConfig");
+    const cfg = (await api()?.get_config()) || state.init?.config || {};
+    const form = $("cfgForm");
+    for (const [k, v] of Object.entries(cfg)) if (form.elements[k]) form.elements[k].value = String(v);
+    $("cfgNote").textContent = "";
+    const box = $("inspBox"); box.scrollTop = box.scrollHeight;
+  };
+  $("cfgForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const form = e.target, cfg = {};
+    for (const input of form.elements) {
+      if (!input.name) continue;
+      cfg[input.name] = input.type === "number" ? parseFloat(input.value)
+        : input.name === "word_space_correction" ? input.value === "true" : input.value;
+    }
+    const r = await api()?.set_config(cfg);
+    $("cfgNote").textContent = r?.note || "Saved.";
+  };
+
+  function start(init) {
+    state.init = init; state.live = init.current; state.selftest = !!init.selftest;
+    const source = init.live ? "Gemini 3.8 Flash · live" : "Gemini 3.8 Flash · recorded";
+    $("src2").textContent = source; $("src3").textContent = source;
+    if (!view || !$("p1").childNodes.length) resetView();
+    setHeader(init.current);
+  }
+
+  window.sruti = { onEvent };
+  resetView();
+
+  if (window.__PREVIEW__) {
+    start(window.__PREVIEW__.init);
+    for (const ev of window.__PREVIEW__.events) onEvent(ev);
+  } else {
+    window.addEventListener("pywebviewready", async () => start(await api().ready()));
+  }
+})();
+</script>
+</body>
+</html>

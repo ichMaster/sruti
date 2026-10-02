@@ -51,7 +51,7 @@ For each finding, in order:
 1. **Implement the fix** following `CLAUDE.md` and ARCHITECTURE.md. One finding, one minimal change.
 2. **Add a regression test that would have caught the bug.** A timing bug gets a test that drives the
    injected clock; a segmenter hole gets a test with the exact character sequence; a link bug gets a fake
-   receiver replay. Ollama and the Claude API are mocked.
+   receiver replay. The Gemini and Claude APIs are mocked.
 3. **Validate:** lint and tests green. Commit only passing code.
 4. **Commit** one focused change, `fix(<area>): … (code review #N)`, with the running model's
    `Co-Authored-By` trailer. A **contract change** carries the ARCHITECTURE.md updates and

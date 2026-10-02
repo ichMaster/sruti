@@ -92,9 +92,10 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   - `segmenter`: the pure characters → pieces logic (sessions are manual, owned by the core/store).
   - `store`: the append-only JSONL session store — saving, listing, replay, the manual session switch.
   - `glossary`: the versioned data files and their rendering into prompts.
-  - `explain`: the local (Ollama, gloss + message) and cloud (Claude, on the Explain action) explainers.
-  - `ui`: the TUI (v1 — the four sections, the config panel with the capture inspector, the session
-    switcher) and the web interface (v2 — localhost only).
+  - `explain`: the piece explainer (Gemini 3.8 Flash, gloss + message) and the session explainer
+    (Claude Opus 5.5, on the Explain action).
+  - `ui`: the desktop app — the pywebview window, its page (the four sections, the config panel with the
+    capture inspector, the session switcher) and the JS bridge to the core.
   - `config`: `pyproject.toml`, `.env.example`, `.gitignore`, CI workflows, configuration loading.
   - `tests`.
   - `docs`: the `specification/` files, README.md, CLAUDE.md.
@@ -103,9 +104,9 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   the project skeleton plus configuration loading; in v1.2 it is the pure segmenter module.
 - **Tests in every code issue.** Keep decision logic pure so it can be unit-tested with plain data: the
   piece cut rules, `cw_chars` decoding, prompt assembly, output-schema validation, the Explain trigger
-  handling, the cost accounting, the interface's view models. Ollama and the Claude API are mocked, the
-  fake receiver replays recordings, the TUI is driven headless, the clock is injected, and no test touches
-  the network.
+  handling, the cost accounting, event serialization for the bridge. The Gemini and Claude APIs are
+  mocked, the fake receiver replays recordings, the app's bridge is driven with a fake window, the clock
+  is injected, and no test touches the network.
 - **Manual DoD checks** from ROADMAP.md go into the acceptance criteria as **Manual (owner):** items. The
   executor cannot pass them on its own.
 - **Contract changes:** a change to anything in CLAUDE.md **Contracts** (the record shapes, the segmenter
@@ -116,9 +117,9 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   - Mark which checks Claude can run offline from the repo (fixtures, replays).
   - Name any repo artifact the issue produces (e.g. a recorded session under `specification/examples/` or
     the fixtures directory).
-- **Stay within the phase.** No Ollama before v1.3, no TUI before v1.4, no cloud explainer before v1.5,
-  no web interface before v2, nothing from MISSION.md's non-goals (no transmitting, no digital modes, no
-  LAN- or internet-facing server).
+- **Stay within the phase.** No piece explainer before v1.3, no app window before v1.4, no session
+  explainer before v1.5, nothing from MISSION.md's non-goals (no transmitting, no digital modes, no web
+  server, nothing reachable from the LAN or the internet).
 
 ### Step 2: Write the issues file
 
@@ -212,7 +213,7 @@ read and edit it first.
 - **One file per phase**, at `specification/implementation/vA.B-issues.md`.
 - **Ids are globally sequential** (`SRUTI-###`) across phase files and regeneration runs. Resolve the next id
   as `max(GitHub, local issues files) + 1`.
-- **Tests in every code issue**, with Ollama and the Claude API mocked and the fake receiver for the link.
+- **Tests in every code issue**, with the Gemini and Claude APIs mocked and the fake receiver for the link.
   Manual DoD checks are labeled **Manual (owner):**.
 - **Contract change = ARCHITECTURE.md + the pinning test**, all in the same issue.
 - **Stay within the phase** and outside MISSION.md's non-goals. Simplicity beats completeness.
