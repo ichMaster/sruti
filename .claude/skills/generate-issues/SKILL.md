@@ -1,0 +1,216 @@
+---
+name: generate-issues
+description: Decompose one ROADMAP phase (vA.B) into a dependency-ordered issues file at specification/implementation/vA.B-issues.md, grounded in the real current code. The output feeds /upload-issues (GitHub flow) or /execute-issues-file (offline flow).
+---
+
+# Skill: Generate Phase Issues
+
+Decompose one ROADMAP **phase** (`vA.B`) into a small, dependency-ordered **issues file** at
+`specification/implementation/vA.B-issues.md`. The file is the input to `/upload-issues` → `/execute-issues`
+(GitHub flow), or straight to `/execute-issues-file` (offline flow).
+
+## Usage
+
+```
+/generate-issues <phase>
+```
+
+- `/generate-issues v1.1` or `/generate-issues 1.1`: ROADMAP phase **v1.1** (project skeleton and the
+  receiver link) → `specification/implementation/v1.1-issues.md`
+
+One file per phase. Issue ids (`SRUTI-###`) are **globally sequential** across phase files **and across
+regeneration runs**. Never reset them.
+
+## Instructions
+
+### Step 0: Read inputs
+
+1. Normalize the argument to `vA.B` and check it exists as a `### vA.B` heading in
+   [specification/ROADMAP.md](../../../specification/ROADMAP.md). For anything else, name it and ask.
+   (v2 and v3 are not phased in the ROADMAP yet; they must be broken into `### vA.B` phases there before
+   issues can be generated.)
+2. Read ROADMAP.md §`vA.B`: the phase's **Goal**, description, **Tasks**, **DoD** (including which items are
+   **Manual (owner)** — anything that needs a live receiver, a real model run or a quality judgment) and
+   **Tests**, plus the version heading (`## vA`) it sits under.
+3. Read [specification/ARCHITECTURE.md](../../../specification/ARCHITECTURE.md) for the mechanisms and
+   **contracts** the phase touches (the record shapes, the segmenter rules, the two-tier table, the KiwiSDR
+   protocol), and [specification/MISSION.md](../../../specification/MISSION.md) for the principles and
+   **non-goals**. The scope fence is the phase itself plus the non-goals: never pull a later phase's work in
+   early, and never add what no phase asks for.
+4. Read `CLAUDE.md` for the acceptance gates and the rules that are easy to break.
+5. **Find the next free `SRUTI-###` id. Never restart the numbering.** Check both sources and continue
+   from the higher:
+
+   ```bash
+   # (a) GitHub: survives a wiped working tree (skip if the repo has no remote)
+   gh issue list --state all --limit 1000 --json title \
+     --jq '.[].title | capture("SRUTI-(?<n>[0-9]+)").n' 2>/dev/null | sort -n | tail -1
+
+   # (b) local issues files: covers ids drafted but not uploaded
+   grep -rhoE 'SRUTI-[0-9]+' --include='*-issues.md' specification/implementation/ 2>/dev/null \
+     | grep -oE '[0-9]+' | sed 's/^0*//' | sort -n | tail -1
+   ```
+
+   Pass the directory with `--include`, not a `*-issues.md` glob. Under zsh an unmatched glob aborts the
+   command before `2>/dev/null` applies, and `specification/implementation/` may not exist yet.
+
+   The next id is `max(a, b) + 1`, zero-padded to three digits. Start at `SRUTI-001` only if both sources
+   come back empty. Say in the report which sources were checked: with no remote, or with `gh`
+   unauthenticated, (b) alone governs.
+6. If `specification/implementation/vA.B-issues.md` already exists, ask whether to overwrite or append.
+
+### Step 0.5: Reconcile with the real implementation
+
+Ground the phase in what was actually built and fixed, not only in what the specification describes. Review
+fixes and hardening in earlier phases may have moved the code away from the docs.
+
+1. Read the **real current code** this phase builds on: the Python package (receiver, segmenter, glossary,
+   explain, ui, log modules), `tests/`, `pyproject.toml`, `.env.example` and the glossary data files. Note
+   the actual module and function names, signatures, config keys and env var names.
+2. Read the earlier phases' `specification/implementation/*-execution-report.md` and `*code-review*.md`,
+   especially their **"Fixes applied"** and **"Architecture impact"** notes.
+3. Where ARCHITECTURE.md or ROADMAP.md is stale relative to a landed fix, the **code is ground truth** for
+   this phase's issues. Note the drift, and put the ARCHITECTURE.md correction into the issue that touches
+   that contract.
+4. For owner-run tasks (live receiver sessions, recordings, real model runs, quality judgments), check what
+   can be checked offline — e.g. whether the v0.1 recordings or golden examples already exist in the repo —
+   and ask the owner about the rest. A task that is already done becomes a verification-only issue, not new
+   work. Never connect to a public receiver or call a paid API on your own.
+
+### Step 1: Decompose the phase
+
+Turn the phase's tasks into a small set of issues, typically **2–5**. An owner-only phase such as v0.1 (the
+receiver spike) may be a single issue. Don't pad. Each issue is a coherent, independently verifiable slice:
+
+- **Size** by complexity:
+  - **S:** one function or file.
+  - **M:** a feature across a few files.
+  - **L:** a new component or a contract change.
+- **Area**, one of:
+  - `receiver`: the KiwiSDR link (audio channel, CW_decoder extension, reconnect, busy/time-limit states).
+  - `segmenter`: the pure characters → pieces → sessions logic.
+  - `glossary`: the versioned data files and their rendering into prompts.
+  - `explain`: the local (Ollama) and cloud (Claude) explainers.
+  - `ui`: the terminal display.
+  - `config`: `pyproject.toml`, `.env.example`, `.gitignore`, CI workflows, configuration loading.
+  - `tests`.
+  - `docs`: the `specification/` files, README.md, CLAUDE.md.
+  - `ops`: steps the owner performs — live receiver sessions, recordings, opt-in model evals.
+- **Order by dependency.** The first issue is usually the gate that everything builds on. In v1.1 that is
+  the project skeleton plus configuration loading; in v1.2 it is the pure segmenter module.
+- **Tests in every code issue.** Keep decision logic pure so it can be unit-tested with plain data: the
+  piece and session cut rules, `cw_chars` decoding, prompt assembly, output-schema validation, the cloud
+  call scheduling ("new text only", session end), the cost cap. Ollama and the Claude API are mocked, the
+  fake receiver replays recordings, the clock is injected, and no test touches the network.
+- **Manual DoD checks** from ROADMAP.md go into the acceptance criteria as **Manual (owner):** items. The
+  executor cannot pass them on its own.
+- **Contract changes:** a change to anything in CLAUDE.md **Contracts** (the record shapes, the segmenter
+  thresholds, the local JSON schema, the CLI, the session-log format) carries the ARCHITECTURE.md update and
+  the test that pins it, in the **same** issue.
+- **Owner-run (`ops`) issues:**
+  - List the exact steps from ROADMAP.md (which receiver, which frequency, what to record).
+  - Mark which checks Claude can run offline from the repo (fixtures, replays).
+  - Name any repo artifact the issue produces (e.g. a recorded session under `specification/examples/` or
+    the fixtures directory).
+- **Stay within the phase.** No Ollama in v1.1, no cloud explainer in v1.3 beyond what its section asks
+  for, nothing from MISSION.md's non-goals (no transmitting, no digital modes, no GUI in v1).
+
+### Step 2: Write the issues file
+
+Write `specification/implementation/vA.B-issues.md` in English. Use **exactly** this format:
+
+````markdown
+# vA.B — Issues
+
+Issues for phase **vA.B — {title}** (version **vA — {version title}**), derived from the Tasks and DoD in
+[ROADMAP.md](../ROADMAP.md) §vA.B and the contracts in [ARCHITECTURE.md](../ARCHITECTURE.md). This file
+covers one phase; ids continue from the previous phase (SRUTI-{prev} → **SRUTI-{first}…{last}**).
+
+{1–3 sentences: what the phase delivers, what it builds on, what it leaves for later phases.}
+
+## Issues Summary Table
+
+| # | ID | Title | Size | Area | Phase | Dependencies |
+|---|----|-------|------|------|-------|--------------|
+| 1 | SRUTI-{first} | {title} | M | receiver | vA.B | -- |
+| 2 | SRUTI-{…} | {title} | S | tests | vA.B | SRUTI-{first} |
+
+**Size legend:** S = one function or file · M = a feature across a few files · L = a new component or a contract change
+
+---
+
+## Dependency Tree
+
+```
+SRUTI-{first} ({gate})
+  |
+  +-- SRUTI-{…} (…)
+  |
+  +-- SRUTI-{…} (…)  => {phase DoD}
+```
+
+**Parallelization hints:** {what must go first; what is independent}.
+
+---
+
+## vA.B — {title}
+
+### SRUTI-{id} — {Title}
+
+**Description:**
+{1–3 sentences; name the files it touches.}
+
+**What needs to be done:**
+- {bullet}
+
+**Dependencies:** {SRUTI ids, or None}
+
+**Expected result:**
+{one sentence}
+
+**Acceptance criteria:**
+- [ ] {functional criterion}
+- [ ] **Tests:** {the unit tests added, with models mocked / the fake receiver}
+- [ ] **Contract:** {contract + the test that pins it + the ARCHITECTURE.md update} — *(only if a contract changes)*
+- [ ] **Gates:** {which of lint / tests apply}
+- [ ] **Manual (owner):** {DoD check from ROADMAP.md §vA.B} — *(only where the DoD needs a live receiver, a real model or a quality judgment)*
+
+---
+
+{repeat the `### SRUTI-{id} …` block per issue}
+
+## vA.B scope notes
+
+**Critical path:** SRUTI-{…} → … → SRUTI-{…}.
+**Phase DoD (ROADMAP.md §vA.B):** {restate the DoD}.
+**Contracts touched:** {contracts + their tests, or "none"}.
+**Owner steps:** {live receiver sessions, recordings or model runs the owner must perform, or "none"}.
+**Not in this phase:** {nearby work that belongs to a later phase or to no phase}.
+**Generated later:** `vA.B-github-report.md` (on upload), `vA.B-execution-report.md` (on execution).
+````
+
+### Step 3: Report
+
+Show the user the file path, the issue count, the `SRUTI-###` range, the critical path, and which id
+sources were checked. Suggest the next step:
+
+```
+/upload-issues @specification/implementation/vA.B-issues.md   # GitHub flow
+/execute-issues-file vA.B                                     # offline flow
+```
+
+Do **not** create GitHub issues or commit here. This skill only writes the local file, so the user can
+read and edit it first.
+
+## Important Rules
+
+- **One file per phase**, at `specification/implementation/vA.B-issues.md`.
+- **Ids are globally sequential** (`SRUTI-###`) across phase files and regeneration runs. Resolve the next id
+  as `max(GitHub, local issues files) + 1`.
+- **Tests in every code issue**, with Ollama and the Claude API mocked and the fake receiver for the link.
+  Manual DoD checks are labeled **Manual (owner):**.
+- **Contract change = ARCHITECTURE.md + the pinning test**, all in the same issue.
+- **Stay within the phase** and outside MISSION.md's non-goals. Simplicity beats completeness.
+- **Honor the DoD.** Together, the issues must satisfy the phase DoD in ROADMAP.md §vA.B.
+- **Ask on ambiguity.** If a task is under-specified, ask before inventing scope.
+- **Don't touch GitHub.** `/upload-issues` does that.

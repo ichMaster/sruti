@@ -11,5 +11,8 @@ __pycache__/
 *.local
 var/
 
+# Delivery pipeline scratch (see .claude/skills/ship-solution)
+.ship-solution-progress.md
+
 # macOS
 .DS_Store
