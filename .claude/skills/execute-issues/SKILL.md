@@ -65,25 +65,29 @@ Follow `CLAUDE.md` and ARCHITECTURE.md. Route by component:
 
 - **`receiver`:** the KiwiSDR link on `kiwiclient` — the audio channel in CW mode at the chosen frequency,
   the `CW_decoder` extension (attach, `cw_start`, `cw_pboff`), `cw_chars` decoding with timestamps, decoder
-  status (`cw_wpm`, `cw_train`), reconnect with backoff, and "receiver busy" / "time limit reached" as
-  states, not crashes. Listen only: send nothing to the receiver beyond the documented tuning and decoder
-  `SET` messages; one connection per run, identified as `sruti`.
-- **`segmenter`:** pure logic, characters → pieces → sessions per ARCHITECTURE.md §Pieces and sessions.
-  Thresholds come from configuration; the clock is injected.
+  status (`cw_wpm`, `cw_train`), the raw extension messages emitted as events (for the capture inspector),
+  reconnect with backoff, and "receiver busy" / "time limit reached" as states, not crashes. Listen only:
+  send nothing to the receiver beyond the documented tuning and decoder `SET` messages; one connection per
+  run, identified as `sruti`.
+- **`segmenter`:** pure logic, characters → pieces per ARCHITECTURE.md §Pieces and sessions. Thresholds
+  come from configuration; the clock is injected. It never cuts sessions — sessions are manual.
+- **`store`:** one append-only JSONL file per session under `var/sessions/`, in the record shapes of
+  ARCHITECTURE.md; a session replays to the same text; the manual session switch — retune = close the
+  session, open a new one; past sessions replay read-only and are never rewritten.
 - **`glossary/`:** versioned data files (Q-codes, prosigns, abbreviations, per-language habits, prefixes)
   rendered into both prompts. Domain knowledge lives here, not in model memory or hardcoded strings.
-- **`explain/local`:** per piece — instructions + glossary + the session's last pieces + the new piece →
-  Ollama `/api/chat` with a JSON schema → `{text, about}`. 5 s budget; on any failure the piece shows raw
-  text only, never a crash.
-- **`explain/cloud`:** on a timer (every 3 min), only when the session has new text, and once at session
-  end — the whole session → the Claude API. Prompt caching on the stable prefix; the hourly cost cap; on
-  screen it supersedes the local explanations it covers; without an API key the agent runs local-only,
-  without errors. Scheduling decisions are pure functions with an injected clock.
-- **`ui`:** terminal only — raw text streams as characters arrive, L1/L2 under each closed piece, cloud
-  explanations as a distinct block. Output language is Ukrainian; call signs, Q-codes and quoted original
-  text stay as sent. Unreadable text is `[...]`, never a guess.
-- **`log`:** JSONL of every character, piece and explanation with timestamps, matching the record shapes in
-  ARCHITECTURE.md; a session log replays to the same text.
+- **`explain/local`:** per piece — buffered, never word by word: instructions + glossary + the session's
+  last pieces + the new piece → Ollama `/api/chat` with a JSON schema → `{gloss, message}` in English
+  (sections 2 and 3). 5 s budget; on any failure the piece shows raw text only, never a crash.
+- **`explain/cloud`:** **only on the user's Explain action** — never on a timer, never automatic — the
+  whole session → the Claude API → a Ukrainian explanation (section 4). Prompt caching on the stable
+  prefix; every call's cost shown and summed per session; without an API key Explain reports the cloud
+  tier is off. Trigger handling and cost accounting are pure functions with an injected clock.
+- **`ui`:** v1 is the Textual TUI — the four sections of ARCHITECTURE.md §The four sections, the config
+  panel with the capture inspector (raw API messages next to how each parsed, applied on reconnect), and
+  the session switcher. v2 is the web interface: FastAPI bound to `127.0.0.1` only, the event stream over
+  a WebSocket, one static page. The core never imports interface code; view models stay pure. Unreadable
+  text is `[...]`, never a guess; call signs, Q-codes and quoted original text stay as sent.
 - **Contract changes** (CLAUDE.md **Contracts**) update ARCHITECTURE.md and the test that pins the
   contract, in the same commit.
 - **`ops` issues** produce their repo artifacts (recordings, golden examples) plus a numbered checklist for
@@ -241,8 +245,11 @@ Commit the report (`docs: vA.B execution report`, with the trailer) and push.
   - **Never invent.** Unreadable text is `[...]`; a call sign is never "corrected" into a different one.
   - **A polite guest.** One connection per run, identified as `sruti`; back off from busy receivers and
     respect their time limits.
-  - **Degrade, don't crash.** No Ollama → raw text only; no API key → local-only; a dropped link reconnects
-    with backoff.
+  - **The cloud tier runs only on the user's Explain action** — never on a timer, never automatically.
+  - **Sessions are manual and always saved.** Only a retune or quit ends a session; past sessions are
+    never rewritten.
+  - **Degrade, don't crash.** No Ollama → raw text only; no API key → Explain reports the cloud tier is
+    off; a dropped link reconnects with backoff.
 - **Secrets stay out:**
   - Never print `.env`. To check that a value is set, test it without echoing it
     (`grep -q '^ANTHROPIC_API_KEY=.' .env`).

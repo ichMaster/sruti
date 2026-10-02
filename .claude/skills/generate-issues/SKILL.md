@@ -65,7 +65,7 @@ Ground the phase in what was actually built and fixed, not only in what the spec
 fixes and hardening in earlier phases may have moved the code away from the docs.
 
 1. Read the **real current code** this phase builds on: the Python package (receiver, segmenter, glossary,
-   explain, ui, log modules), `tests/`, `pyproject.toml`, `.env.example` and the glossary data files. Note
+   explain, store, ui modules), `tests/`, `pyproject.toml`, `.env.example` and the glossary data files. Note
    the actual module and function names, signatures, config keys and env var names.
 2. Read the earlier phases' `specification/implementation/*-execution-report.md` and `*code-review*.md`,
    especially their **"Fixes applied"** and **"Architecture impact"** notes.
@@ -87,11 +87,14 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   - **M:** a feature across a few files.
   - **L:** a new component or a contract change.
 - **Area**, one of:
-  - `receiver`: the KiwiSDR link (audio channel, CW_decoder extension, reconnect, busy/time-limit states).
-  - `segmenter`: the pure characters → pieces → sessions logic.
+  - `receiver`: the KiwiSDR link (audio channel, CW_decoder extension, raw-message events, reconnect,
+    busy/time-limit states).
+  - `segmenter`: the pure characters → pieces logic (sessions are manual, owned by the core/store).
+  - `store`: the append-only JSONL session store — saving, listing, replay, the manual session switch.
   - `glossary`: the versioned data files and their rendering into prompts.
-  - `explain`: the local (Ollama) and cloud (Claude) explainers.
-  - `ui`: the terminal display.
+  - `explain`: the local (Ollama, gloss + message) and cloud (Claude, on the Explain action) explainers.
+  - `ui`: the TUI (v1 — the four sections, the config panel with the capture inspector, the session
+    switcher) and the web interface (v2 — localhost only).
   - `config`: `pyproject.toml`, `.env.example`, `.gitignore`, CI workflows, configuration loading.
   - `tests`.
   - `docs`: the `specification/` files, README.md, CLAUDE.md.
@@ -99,9 +102,10 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
 - **Order by dependency.** The first issue is usually the gate that everything builds on. In v1.1 that is
   the project skeleton plus configuration loading; in v1.2 it is the pure segmenter module.
 - **Tests in every code issue.** Keep decision logic pure so it can be unit-tested with plain data: the
-  piece and session cut rules, `cw_chars` decoding, prompt assembly, output-schema validation, the cloud
-  call scheduling ("new text only", session end), the cost cap. Ollama and the Claude API are mocked, the
-  fake receiver replays recordings, the clock is injected, and no test touches the network.
+  piece cut rules, `cw_chars` decoding, prompt assembly, output-schema validation, the Explain trigger
+  handling, the cost accounting, the interface's view models. Ollama and the Claude API are mocked, the
+  fake receiver replays recordings, the TUI is driven headless, the clock is injected, and no test touches
+  the network.
 - **Manual DoD checks** from ROADMAP.md go into the acceptance criteria as **Manual (owner):** items. The
   executor cannot pass them on its own.
 - **Contract changes:** a change to anything in CLAUDE.md **Contracts** (the record shapes, the segmenter
@@ -112,8 +116,9 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   - Mark which checks Claude can run offline from the repo (fixtures, replays).
   - Name any repo artifact the issue produces (e.g. a recorded session under `specification/examples/` or
     the fixtures directory).
-- **Stay within the phase.** No Ollama in v1.1, no cloud explainer in v1.3 beyond what its section asks
-  for, nothing from MISSION.md's non-goals (no transmitting, no digital modes, no GUI in v1).
+- **Stay within the phase.** No Ollama before v1.3, no TUI before v1.4, no cloud explainer before v1.5,
+  no web interface before v2, nothing from MISSION.md's non-goals (no transmitting, no digital modes, no
+  LAN- or internet-facing server).
 
 ### Step 2: Write the issues file
 

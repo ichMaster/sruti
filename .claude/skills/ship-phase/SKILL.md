@@ -46,7 +46,7 @@ A **selector** is a phase (`v0.2`, or a bare `0.2`), a version (`v1` = all its p
 ignored.
 
 - `/ship-phase v0.2`: ship phase v0.2, plus any earlier phases that aren't released yet.
-- `/ship-phase v1`: ship v1.1 through v1.4 (and any unreleased earlier phases), then HARDEN, then a summary.
+- `/ship-phase v1`: ship v1.1 through v1.5 (and any unreleased earlier phases), then HARDEN, then a summary.
 - `/ship-phase v1,v0.2 --no-harden`: ships v0.1 → v0.2 → v1.1 → … → v1.4 (reordered and filled), with no
   HARDEN sweep.
 
@@ -55,7 +55,7 @@ ignored.
 > phases are **added automatically**, and anything already released is skipped. On a repo released through
 > `v1.2.0`, `/ship-phase v1.3` does exactly one phase's work.
 >
-> **v2 and v3 are not phased in the ROADMAP yet.** A selector naming them cannot resolve to `### vA.B`
+> **v3 and v4 are not phased in the ROADMAP yet.** A selector naming them cannot resolve to `### vA.B`
 > headings; stop and say the ROADMAP must be phased first.
 
 ## Instructions
@@ -69,7 +69,7 @@ ignored.
    headings, **in file order**. A version selector expands to all its phases; a range to every phase it
    spans.
 3. **Reject nothing silently.** If an element doesn't resolve to a real ROADMAP phase or version (a typo,
-   `v9`, a reversed range `v1-v0`, an unphased `v2`/`v3`), name it and ask. Never drop it and ship the rest.
+   `v9`, a reversed range `v1-v0`, an unphased `v3`/`v4`), name it and ask. Never drop it and ship the rest.
 4. **Expand, de-duplicate and fill.** Resolve the elements to a set of phases. Then add **every earlier
    roadmap phase** before the latest one that isn't already in the set. These are requirements, not scope
    creep: report them at confirmation but don't ask permission.

@@ -27,7 +27,7 @@ flagging it.
 
 - `/review-and-fix-issues v1.1`: review what the phase delivered (through its tag `v1.1.0` if released).
 - `/review-and-fix-issues receiver`: scope the review to one component
-  (`receiver` / `segmenter` / `glossary` / `explain` / `ui` / `log` / `tests`).
+  (`receiver` / `segmenter` / `store` / `glossary` / `explain` / `ui` / `tests`).
 - `/review-and-fix-issues`: review the **current branch**, i.e. everything built so far.
 
 ## Instructions
@@ -57,38 +57,55 @@ defects, not restatements of what works.
 - **Receiver link robustness:**
   - Does a dropped WebSocket reconnect with backoff, and are "busy" and "time limit reached" states rather
     than crashes?
-  - Does a reconnect duplicate or lose characters in the session log?
+  - Does a reconnect duplicate or lose characters in the session store?
   - Is `cw_chars` URI-decoding safe against malformed input, and are unknown extension messages ignored
     rather than fatal?
   - Is the tone offset (`cw_pboff`) set per ARCHITECTURE.md, so the decoder actually hears the signal?
 - **Segmenter:**
   - Do pieces close exactly on the specified rules — an end-of-turn prosign **standing alone** (`K`, `KN`,
     `BK`, `AR`, `SK`), the pause, the length cap — and does a prosign inside a word *not* cut?
-  - Do sessions end on `SK`, a frequency change, or the silence threshold?
   - Are the thresholds configuration, not constants, and is the clock injected?
   - Are timing edge cases right (characters straddling the pause boundary, a cut at exactly the cap)?
+- **Sessions:**
+  - Is the session boundary **manual only** — retune or quit — and does `SK` or silence ever end a session
+    on its own (it must not)?
 - **Never invent:**
   - Is unreadable text marked `[...]`, never guessed? Is the decoder's `[err]` handled?
   - Can any prompt or post-processing "correct" a call sign into a different call sign?
   - Is uncertainty surfaced rather than smoothed over?
 - **Local explainer:**
-  - Is the model output validated against the JSON schema, and does invalid or missing output degrade to
-    raw text only — never a crash, never a half-parsed guess?
-  - Is Ollama being down or slow handled within the 5 s budget?
+  - Is it called per **piece** (the buffer), never word by word as characters arrive?
+  - Is the model output validated against the `{gloss, message}` JSON schema, and does invalid or missing
+    output degrade to raw text only — never a crash, never a half-parsed guess?
+  - Is the local model runtime (Ollama) being down or slow handled within the 5 s budget?
   - Does the prompt carry the glossary, the last pieces and the new piece as specified?
-  - Is the output Ukrainian with call signs, Q-codes and quoted original text kept as sent?
+  - Are the gloss and the message in English (per configuration), with call signs, Q-codes and quoted
+    original text kept as sent? Does the gloss cover every token rather than skipping the hard ones?
 - **Cloud explainer:**
-  - Does it fire only on the timer **when there is new text**, and once at session end?
-  - Does a missing API key mean local-only operation with no errors?
-  - Is the hourly cost cap enforced, and counted correctly across sessions?
-  - Is the stable prefix (instructions + glossary) first, so prompt caching works?
-  - Are the scheduling decisions pure functions with an injected clock?
-  - Can a failed or slow Claude call kill the listening loop? Does the display block correctly supersede
-    the local explanations it covers?
-- **Session log:**
-  - Is every character, piece and explanation logged with timestamps, in the record shapes of
+  - Does it fire **only on the user's Explain action** — and never on a timer, at session end, on
+    reconnect, or anywhere else?
+  - Does a missing API key mean local-only operation, with Explain reporting the cloud tier is off — no
+    errors, no crash?
+  - Is every call's cost computed, shown, and summed per session correctly?
+  - Is the stable prefix (instructions + glossary) first, so prompt caching works across presses?
+  - Is the explanation in Ukrainian (per configuration), reference-answer style, over the whole session?
+  - Can a failed or slow Claude call kill the listening loop or wedge section 4? A failure must leave the
+    previous explanation with an error note.
+- **The interface (TUI; web from v2):**
+  - Do the four sections update per the display contract — section 1 live, sections 2–3 on piece close,
+    section 4 only on Explain?
+  - Does the core import any interface code, or an interface reach around the commands into the core?
+  - Are the view models pure and tested, and is the TUI driven headless in tests?
+  - Does the config panel apply changes on reconnect and save them to the config file, and does the
+    capture inspector show the raw extension messages next to how each parsed?
+  - Does the session switcher open past sessions read-only, and does "new session" retune?
+  - (v2) Is the web server bound to `127.0.0.1` only, with a test pinning the binding?
+- **The session store:**
+  - Is every character, piece and explanation persisted with timestamps, in the record shapes of
     ARCHITECTURE.md §Pieces and sessions?
-  - Does a log replay to the same text, and does a crash mid-write corrupt the log?
+  - Does a session replay to the same text, and does a crash mid-write corrupt the file?
+  - Does retuning close the current session and open a new one without losing characters, and is a past
+    session ever rewritten (it must not be)?
 - **Robustness:**
   - Can an exception in the character callback or an explainer call kill the listening loop?
   - Are empty and huge pieces handled, and what happens when the models are slower than the stream
@@ -107,7 +124,7 @@ For each finding, capture:
 - a **proposed fix**.
 
 Cross-check against ROADMAP.md and ARCHITECTURE.md. If a gap is already scheduled for a later phase (e.g.
-local decoding is v2), note that instead of treating it as new.
+local decoding is v3), note that instead of treating it as new.
 
 ### Step 2: Write the recommendations document (the plan)
 
@@ -124,10 +141,10 @@ Write **one** doc at `specification/implementation/<scope>-code-review.md`, e.g.
 Decide **FIX NOW vs DEFER** honestly:
 
 - **FIX NOW** means real, small, self-contained, high-value and in scope now: a crash that kills the
-  listening loop, an invented call sign, a hammered receiver, the API key in a log, a session log that
+  listening loop, an invented call sign, a hammered receiver, the API key in a log, a saved session that
   doesn't replay.
 - **DEFER →** means larger work, or work a later phase already owns. Give the home: a later phase
-  (`v1.2`…`v1.4`, `v2`, `v3`), `backlog` (no phase owns it) or `cleanup (/simplify)`. Do **not** pull it
+  (`v1.2`…`v1.5`, `v2.1`, `v2.2`, `v3`), `backlog` (no phase owns it) or `cleanup (/simplify)`. Do **not** pull it
   forward.
 
 Commit the doc as the plan (`docs: vA.B code review`) **and push it** if a remote exists. The review is worth

@@ -28,7 +28,7 @@ Run it right before `/execute-issues-file`.
 1. **The issues file:** resolve the target to `specification/implementation/vA.B-issues.md` and read all of it:
    the summary table, the dependency tree and every `### SRUTI-###` section.
 2. **The code:** read the **real current code** the issues touch: the Python package (receiver, segmenter,
-   glossary, explain, ui, log modules), `tests/`, `pyproject.toml`, `.env.example` and the glossary data
+   glossary, explain, store, ui modules), `tests/`, `pyproject.toml`, `.env.example` and the glossary data
    files. Note the actual module and function names, signatures, config keys, env var names and
    dependencies.
 3. **Earlier records:** read the earlier phases' `specification/implementation/*-execution-report.md` and

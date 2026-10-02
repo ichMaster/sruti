@@ -55,15 +55,21 @@ Show the ordered plan and proceed. With `--dry-run`, stop here.
 3. **Implement** per `CLAUDE.md` and ARCHITECTURE.md, routed by component. The routing is the same as
    `/execute-issues` Step 2c:
    - `receiver`: the KiwiSDR link on `kiwiclient` — audio channel, `CW_decoder` extension, `cw_chars`
-     decoding, reconnect with backoff, busy and time-limit states. Listen only; one connection, identified
-     as `sruti`.
-   - `segmenter`: pure characters → pieces → sessions, thresholds from configuration, clock injected.
+     decoding, raw extension messages as events, reconnect with backoff, busy and time-limit states.
+     Listen only; one connection, identified as `sruti`.
+   - `segmenter`: pure characters → pieces, thresholds from configuration, clock injected; sessions are
+     manual, not the segmenter's.
+   - `store`: append-only JSONL sessions under `var/sessions/` in ARCHITECTURE.md's record shapes; replay
+     to the same text; the manual session switch (retune = new session); past sessions never rewritten.
    - `glossary/`: versioned data rendered into both prompts.
-   - `explain/local`: Ollama with a JSON schema → `{text, about}`; 5 s budget; on failure raw text only.
-   - `explain/cloud`: the Claude API on a timer, "new text only" and at session end; prompt caching on the
-     stable prefix; the hourly cost cap; local-only without an API key.
-   - `ui`: terminal display; Ukrainian output, call signs and Q-codes as sent, `[...]` for the unreadable.
-   - `log`: the JSONL session log matching ARCHITECTURE.md's record shapes; a log replays to the same text.
+   - `explain/local`: Ollama with a JSON schema → `{gloss, message}` in English (sections 2–3), buffered
+     by piece; 5 s budget; on failure raw text only.
+   - `explain/cloud`: the Claude API **only on the Explain action** → a Ukrainian explanation (section 4);
+     prompt caching on the stable prefix; per-call cost shown and summed; Explain reports the cloud tier is
+     off without an API key.
+   - `ui`: the Textual TUI (v1) — the four sections, the config panel with the capture inspector, the
+     session switcher; the web interface (v2) on `127.0.0.1` only. The core never imports interface code;
+     `[...]` for the unreadable, call signs and Q-codes as sent.
    - `ops` issues produce their repo artifacts (recordings, golden examples) plus a numbered checklist for
      the owner. Don't connect to a public receiver or call a real model unless the owner asks.
    - A **contract change** updates ARCHITECTURE.md and its pinning test in the same commit.
@@ -136,7 +142,8 @@ exists.
   runs and the golden-example eval are opt-in, by the owner.
 - **Contracts stay stable**: ARCHITECTURE.md and the pinning test change together.
 - **Mission invariants hold**: listen only, never invent (`[...]`, no "corrected" call signs), a polite
-  guest, degrade instead of crashing.
+  guest, the cloud tier only on the Explain action, sessions manual and always saved, degrade instead of
+  crashing.
 - **Secrets stay out.** Never print `.env`; the API key never appears in argv, logs or commits.
 - **Ask on ambiguity.** If an issue's scope is unclear, ask rather than guess.
 - **Progress updates.** Print a short status line after each issue.

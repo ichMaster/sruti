@@ -6,8 +6,9 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-# Local configuration and recordings
-.env
+# Local configuration and recordings — keys live only in .env, never in git
+.env*
+!.env.example
 *.local
 var/
 

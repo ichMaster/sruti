@@ -16,6 +16,11 @@ E FACCIO CW MA IL MIO MAESTRO [err]L INO CIRCA 7 ANNI HO COMOS[err]IUNO IL GRAND
 
 ## Reference answer — Claude Fable 5.1
 
+This is the bar for **section 4** (the on-demand, whole-session explanation, in Ukrainian). The local
+tier's outputs for the same text — the section-2 word-by-word gloss and the section-3 English message —
+are judged on the same substance: the mapping of every abbreviation this answer explains, and the
+translated message it contains, rendered in English.
+
 > Вітаю, ви впіймали живу розмову італійських радіоаматорів. Вони спілкуються звичайною італійською мовою, а декодер місцями помиляється з пробілами та літерами, тому текст виглядає порваним.
 >
 > Приблизний переклад такий:
@@ -53,7 +58,8 @@ E FACCIO CW MA IL MIO MAESTRO [err]L INO CIRCA 7 ANNI HO COMOS[err]IUNO IL GRAND
 
 ## The bar for a passing answer
 
-- Translates rather than echoes; the Ukrainian reads naturally.
+- Translates rather than echoes; the output reads naturally (Ukrainian for the section-4 explanation,
+  English for the section-3 message).
 - Gets the substance: switching to an IC-7300 and handing over; thanks for the information; new to CW; taught by Lino, whom he met about seven years ago and who "took him under his wing".
 - Explains `DE`, `K`, `R`, `HW`, `QSO`, `RTX`, `ET`, `CAMBIO`, and the structure of Italian call signs.
 - Marks the unreadable start instead of inventing it.
@@ -61,4 +67,6 @@ E FACCIO CW MA IL MIO MAESTRO [err]L INO CIRCA 7 ANNI HO COMOS[err]IUNO IL GRAND
 
 ## Known failures
 
-- `qwen3:8b`, thinking off (2026-10-02): L1 echoed the Italian; L2 read `IU3 F E JDE` as one call sign and "il grande Lino" as "a great line".
+- `qwen3:8b`, thinking off (2026-10-02, against the earlier two-field schema): the translation echoed the
+  Italian instead of translating; the summary read `IU3 F E JDE` as one call sign and "il grande Lino" as
+  "a great line".
