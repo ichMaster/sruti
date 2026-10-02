@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[codz]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local configuration and recordings
+.env
+*.local
+var/
+
+# macOS
+.DS_Store
