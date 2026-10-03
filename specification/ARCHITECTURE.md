@@ -144,7 +144,7 @@ the browser page's path for a page without a waterfall. Some receivers close `ki
 | → | `SET auth t=kiwi p=` | log in as a public listener (no password) |
 | → | `SERVER DE CLIENT sruti SND` | the page's greeting, sent right after `auth` |
 | → | `SET ident_user=sruti` | the name the receiver shows for this connection |
-| → | `SET mod=cw low_cut=300 high_cut=700 freq=<kHz>` | CW mode, the default passband, at the signal's own frequency |
+| → | `SET mod=cw low_cut=300 high_cut=700 freq=<kHz>` | CW mode at the signal's own frequency; 300–700 Hz is the default passband, a wider one (e.g. 200–2800) tolerates a frequency read off the waterfall |
 | → | `SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50` | automatic gain, the receiver's defaults |
 | → | `SET compression=0` | plain 16-bit samples instead of IMA ADPCM |
 | → | `SET AR OK in=<audio_rate> out=44100` | acknowledge the audio rate the receiver announced |
@@ -179,9 +179,10 @@ time; the link reports both and backs off from a busy or full receiver.
 sruti's own CW decoder turns the channel's audio into characters (prototype: `poc/receiver/cw_decode.py`,
 v0.1; product: v1.2):
 
-1. **Find the tone.** Score every frequency in 300–1000 Hz by its loud moments — the 90th percentile of
-   its power over short frames — because keyed CW is intermittent. A tone counts only if it stands at
-   least 6 dB above the rest of the passband; an empty passband yields no text at all.
+1. **Find the tone.** Score every frequency the receiver's filter passes by its loud moments — the 90th
+   percentile of its power over short frames — because keyed CW is intermittent. Bins outside the filter
+   are ignored: their near-silence would make plain noise look like a tone. A tone counts only if it
+   stands at least 6 dB above the rest of the passband; an empty passband yields no text at all.
 2. **Follow its envelope.** Mix the tone down to 0 Hz, smooth over 12 ms and take the magnitude every
    5 ms, in dB.
 3. **Key on an adaptive threshold.** Over a 4 s window, the threshold sits midway between the noise floor
@@ -326,7 +327,8 @@ prefix for prompt caching across presses.
 
 ## Configuration and the config panel
 
-- **The config file** (`sruti.toml`): receiver `host:port`, frequency, the decoder parameters (tone:
+- **The config file** (`sruti.toml`): receiver `host:port`, frequency, the passband (300–700 Hz, or wider
+  for an imprecise frequency), the decoder parameters (tone:
   automatic or fixed Hz; speed: automatic or fixed WPM; the threshold contrast), the client identity (`sruti`),
   the output languages (`language.piece`, `language.session`), the segmenter thresholds, the model names
   and budgets. **`.env` holds the two API keys** — `GEMINI_API_KEY` for the piece tier and
