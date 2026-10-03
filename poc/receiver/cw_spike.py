@@ -21,8 +21,8 @@ Replay a capture (offline):
     python3 poc/receiver/cw_spike.py --replay var/recordings/beacons.jsonl
 
 Capture format, one JSON object per line: {"t": epoch seconds, "ws": "SND" | "EXT", "dir": "→" sent or
-"←" received, "msg": the text message exactly as on the wire}. Binary audio frames and the once-a-second
-"SET keepalive" are not recorded.
+"←" received, "msg": the text message exactly as on the wire}. Binary audio and waterfall frames and the
+once-a-second "SET keepalive" are not recorded; the owner's address in "MSG client_public_ip" is masked.
 """
 
 import argparse
@@ -32,6 +32,7 @@ import sys
 import threading
 import time
 import urllib.parse
+import wave
 from collections import Counter
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
@@ -95,6 +96,8 @@ class Capture:
     def write(self, ws: str, direction: str, msg: str) -> None:
         if self._file is None or msg == "SET keepalive":
             return
+        if msg.startswith("MSG client_public_ip="):
+            msg = "MSG client_public_ip=0.0.0.0"  # the owner's address: captures get committed
         line = json.dumps({"t": round(time.time(), 3), "ws": ws, "dir": direction, "msg": msg},
                           ensure_ascii=False)
         with self._lock:
@@ -110,15 +113,42 @@ def make_streams(args, capture: Capture, stop: threading.Event):
     sys.path.insert(0, str(KIWICLIENT))
     from types import SimpleNamespace
 
+    import kiwi.client
     from kiwi.client import KiwiSDRStream
 
     host, port = args.receiver.rsplit(":", 1)
+    ts = (1 << 62) | int(time.time() * 1_000_000)
+    if args.browser_path:
+        # Connect the way the KiwiSDR browser page does: take the connection timestamp the receiver
+        # issues at /VER, and open /ws/no_wf/<ts>/<stream> ("no_wf": a page without a waterfall).
+        # Some receivers close kiwiclient's own /<ts>/<stream> path right after auth.
+        import urllib.request
+        with urllib.request.urlopen(f"http://{host}:{port}/VER", timeout=10) as resp:
+            ts = int(json.load(resp)["ts"])
+
+        class BrowserPathHandshake(kiwi.client.ClientHandshakeProcessor):
+            def handshake(self, resource):
+                return super().handshake("/ws/no_wf" + resource)
+
+        kiwi.client.ClientHandshakeProcessor = BrowserPathHandshake
+
     options = SimpleNamespace(
         server_host=host, server_port=int(port), wideband=False, socket_timeout=10,
-        ws_timestamp=int(time.time()) & 0xFFFFFFFF,  # shared: it ties the EXT socket to the SND channel
+        # Shared by both sockets: the server ties the EXT socket to the SND channel with the same
+        # timestamp. Bit 62 is the server's NEW_TSTAMP_SPACE, which skips its client-IP match — needed
+        # because a corporate gateway can send the two sockets out through different addresses.
+        ws_timestamp=ts,
         nolocal=False, admin=False, password="", tlimit_password="",
-        freq_pbc=True, tlimit=None, stats=False, idx=0, wf_cal=None,
+        # The receiver treats the CW-mode frequency as the signal's own and shifts the tone itself, so
+        # no passband-centre correction: kiwiclient's --pbc moved signals ~500 Hz, out of the passband.
+        freq_pbc=False, tlimit=None, stats=False, idx=0, wf_cal=None,
+        # read by kiwiclient's audio and waterfall paths, which this spike bypasses
+        netcat=False, sound=False, resample=0, S_meter=-1, sdt=0, tstamp=False, station=None,
+        filename="", dir=None, test_mode=False, rev_bin=False, nb=False, nb_test=False,
+        multiple_connections=False, camp_allow_1ch=False, bad_cmd=False, ADC_OV=False,
+        modulation="cw", lp_cut=CW_PASSBAND[0], hp_cut=CW_PASSBAND[1], user=IDENTITY,
     )
+    channel = {}  # the SND channel number, when the receiver announces it
 
     class Stream(KiwiSDRStream):
         def __init__(self, kind: str):
@@ -134,39 +164,99 @@ def make_streams(args, capture: Capture, stop: threading.Event):
 
         def _process_ws_message(self, message):
             tag = bytes(message[0:3]).decode("ascii", "replace")
-            if tag != "SND":
+            if tag in ("MSG", "EXT"):  # text frames; audio and waterfall frames are binary
                 capture.write(self._type, "←", bytes(message).decode("utf-8", "replace"))
             super()._process_ws_message(message)
+
+        def _process_aud(self, body):
+            # The audio itself is not needed (the receiver decodes the CW); only its signal level.
+            self.frames = getattr(self, "frames", 0) + 1
+            if len(body) >= 7:
+                self.rssi = 0.1 * int.from_bytes(bytes(body[5:7]), "big") - 127
+            now = time.time()
+            if now - getattr(self, "_last_report", 0) >= 10:
+                self._last_report = now
+                print(f"\n[audio frames {self.frames} · signal {getattr(self, 'rssi', float('nan')):.1f} dBm]",
+                      file=sys.stderr, flush=True)
+
+        def _process_wf(self, body):
+            pass
 
     class Sound(Stream):
         def __init__(self):
             super().__init__("SND")
+            self.wav = None  # set by listen() when --audio is given
 
         def _process_aud(self, body):
-            pass  # the audio itself is not needed: the receiver decodes the CW
+            super()._process_aud(body)
+            if self.wav is None or len(body) <= 7:
+                return
+            import numpy as np
+
+            flags, data = body[0], bytes(body[7:])
+            if flags & 0x10:  # SND_FLAG_COMPRESSED: IMA ADPCM, kiwiclient decodes it
+                samples = np.asarray(self._decoder.decode(data), dtype=np.int16)
+            else:
+                samples = np.frombuffer(data, dtype=">i2")
+            self.wav.writeframes(samples.astype("<i2").tobytes())
+
+        def _process_msg_param(self, name, value):
+            if name == "rx_chan" and value is not None:
+                channel["rx"] = value
+            super()._process_msg_param(name, value)
+
+        def open(self):
+            super().open()
+            if args.browser_path:  # the page greets and tunes right after auth, without waiting
+                self._send_message(f"SERVER DE CLIENT {IDENTITY} SND")
+                self._setup_rx_params()
 
         def _setup_rx_params(self):
+            if getattr(self, "_tuned", False):
+                return
+            self._tuned = True
             self.set_name(IDENTITY)
             self.set_mod("cw", CW_PASSBAND[0], CW_PASSBAND[1], args.freq)
             self.set_agc(on=True)
+            if args.audio:
+                self._set_snd_comp(False)  # plain 16-bit samples for the recording
 
     class Decoder(Stream):
         def __init__(self):
             super().__init__("EXT")
+            # The decoder socket is silent until there is a signal to decode; a short read timeout
+            # would end the session in the first quiet stretch.
+            self._options = SimpleNamespace(**{**vars(options), "socket_timeout": 600})
 
         def _setup_rx_params(self):
-            # The order the KiwiSDR browser client uses: start, tone offset, speed, then the threshold,
+            # After "EXT ready" the commands follow the browser order: start, tone offset, speed, threshold,
             # which must follow cw_wpm because setting the speed re-initialises the decoder.
+            if getattr(self, "_switched", False):
+                return
+            self._switched = True
             self.set_name(IDENTITY)
-            self._send_message("SET ext_switch_to_client=CW_decoder first_time=1 rx_chan=0")
+            # The receiver ignores rx_chan here (v1.902 ext.cpp): it attaches the decoder to the channel
+            # tied to this socket by the shared timestamp, so the decoder can only ever hear our channel.
+            self._send_message(f"SET ext_switch_to_client=CW_decoder first_time=1 rx_chan={channel.get('rx', 0)}")
+            # The receiver flushes this socket's input on the switch (EXT-STOP-FLUSH-INPUT) and answers
+            # "EXT ready"; the decoder commands go only after that, as the browser does.
+
+        def _start_decoder(self):
+            if getattr(self, "_started", False):
+                return
+            self._started = True
             self._send_message(f"SET cw_start={TRAINING}")
             self._send_message(f"SET cw_pboff={args.pboff}")
             self._send_message(f"SET cw_wpm=0,{TRAINING}")
             self._send_message("SET cw_auto_thresh=0")
             self._send_message(f"SET cw_threshold={round(10 ** (THRESHOLD_DB / 10))}")
+            if args.decoder_test:  # the receiver plays its own recorded CW through the decoder
+                self._send_message("SET cw_test=1")
 
         def _process_ext(self, name, value):
-            if name == "cw_chars" and value is not None:
+            if name == "ready":
+                self._start_decoder()
+            elif name == "cw_chars" and value is not None:
                 sys.stdout.write(value)
                 sys.stdout.flush()
             elif name in ("cw_wpm", "cw_train"):
@@ -206,22 +296,31 @@ def listen(args) -> int:
     stop = threading.Event()
     errors: list = []
     sound, decoder = make_streams(args, capture, stop)
-    print(f"{args.receiver} · {args.freq} kHz (passband centre) · cw_pboff {args.pboff} Hz"
-          f"{' · capture ' + str(out) if out else ''} — Ctrl-C to stop", file=sys.stderr)
+    audio = pathlib.Path(args.audio) if args.audio else None
+    if audio:
+        audio.parent.mkdir(parents=True, exist_ok=True)
+        sound.wav = wave.open(str(audio), "wb")  # noqa: SIM115 - open for the whole session, closed below
+        sound.wav.setnchannels(1)
+        sound.wav.setsampwidth(2)
+        sound.wav.setframerate(12000)  # the KiwiSDR audio rate
+    print(f"{args.receiver} · {args.freq} kHz"
+          f"{' · capture ' + str(out) if out else ''}{' · audio ' + str(audio) if audio else ''}"
+          " — Ctrl-C to stop", file=sys.stderr)
 
-    threads = [threading.Thread(target=drive, args=(sound, stop, errors), daemon=True)]
-    threads[0].start()
-    time.sleep(2)  # the channel must exist before the extension attaches to it
-    threads.append(threading.Thread(target=drive, args=(decoder, stop, errors), daemon=True))
-    threads[1].start()
+    streams = [sound] + ([decoder] if args.kiwi_decoder else [])
+    for i, s in enumerate(streams):
+        if i:
+            time.sleep(2)  # the channel must exist before the extension attaches to it
+        threading.Thread(target=drive, args=(s, stop, errors), daemon=True).start()
     try:
         while not stop.is_set():
             time.sleep(0.2)
     except KeyboardInterrupt:
         pass
-    decoder.stop_decoder()
+    if args.kiwi_decoder:
+        decoder.stop_decoder()
     stop.set()
-    for s in (decoder, sound):
+    for s in reversed(streams):
         try:
             s.close()
         except Exception:  # noqa: BLE001, S110 - best effort on the way out
@@ -230,6 +329,20 @@ def listen(args) -> int:
     print(file=sys.stderr)
     for err in errors:
         print(f"receiver ended the session — {err}", file=sys.stderr)
+    if audio:
+        sound.wav.close()
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+        import cw_decode
+
+        x, fs = cw_decode.load_wav(str(audio))
+        if len(x) == 0:
+            print("no audio was recorded", file=sys.stderr)
+            return 1
+        r = cw_decode.decode_audio(x, fs)
+        print("--- decoded on the Mac (poc/receiver/cw_decode.py) ---", file=sys.stderr)
+        print(r["text"] or "(no CW found)")
+        print(f"[{r['seconds']:.0f} s · tone {r['tone_hz']:.0f} Hz, {r['prominence_db']:.1f} dB above the passband"
+              f" · ~{r['wpm']:.0f} WPM]", file=sys.stderr)
     return 1 if errors else 0
 
 
@@ -240,6 +353,13 @@ def main() -> int:
     ap.add_argument("--pboff", type=int, default=500, help="tone offset for the decoder, Hz (default 500)")
     ap.add_argument("--out", help="write the raw capture to this JSONL file")
     ap.add_argument("--replay", help="print the text of a saved capture and exit (offline)")
+    ap.add_argument("--audio", help="record the channel audio to this WAV file and decode it on the Mac")
+    ap.add_argument("--kiwi-decoder", action="store_true",
+                    help="also attach the receiver's own CW_decoder extension (EXT socket)")
+    ap.add_argument("--decoder-test", action="store_true",
+                    help="diagnostic: have the receiver play its built-in CW test file through the decoder")
+    ap.add_argument("--browser-path", action="store_true",
+                    help="experimental: use the browser's /ws/kiwi/ WebSocket path instead of kiwiclient's")
     args = ap.parse_args()
     if args.replay:
         return replay(pathlib.Path(args.replay))
