@@ -97,7 +97,7 @@ code. The window is a shell over the core: new behavior goes into the core, not 
    and the stable prefix is exactly what gets cached: the Gemini API can cache it across pieces, the
    Claude API across presses. Model memory is never trusted for expansions — a wrong gloss is fixed by
    editing a data line, and both tiers speak the same terms. A full prefix→country table (CTY-scale,
-   thousands of rows) never goes into a prompt: that is a code lookup ("Later" in the ROADMAP), its result
+   thousands of rows) never goes into a prompt: that is a code lookup (ROADMAP §Deferred), its result
    injected per heard call sign.
 5. **Piece explainer (`explain/piece`).** Per piece — buffered by the segmenter, never word by word as it
    arrives: instructions + glossary + the session's last raw pieces + the recent section-3 entries + the
