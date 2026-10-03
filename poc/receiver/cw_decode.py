@@ -132,35 +132,58 @@ def runs(keys: np.ndarray, min_hops: int = 2) -> list[list]:
 
 # ---------------------------------------------------------------- keying → text
 
-def dot_length(marks: list[int]) -> float:
-    """Dot length in hops: the lower of two clusters of mark lengths (dots, dashes ≈ 3 dots)."""
-    lo_hops = 1.2 / WPM_RANGE[1] / HOP_S
-    hi_hops = 1.2 / WPM_RANGE[0] / HOP_S
-    m = np.log(np.clip(np.asarray(marks, dtype=float), lo_hops * 0.5, hi_hops * 3.5))
-    if len(m) < 2 or np.ptp(m) < 0.4:  # one cluster only: call it dots if short, dashes if long
-        guess = float(np.exp(np.median(m)))
-        return guess if guess <= hi_hops else guess / 3
+GLITCH_MARK = 0.4  # a mark shorter than this many dots is a noise spike, part of the gap
+DROPOUT_GAP = 0.25  # a gap shorter than this many dots is a fade inside one mark
+
+
+def _two_means(m: np.ndarray) -> tuple[float, float]:
     a, b = np.percentile(m, 20), np.percentile(m, 80)
-    for _ in range(20):  # two-means in log space
+    for _ in range(20):
         near_a = np.abs(m - a) <= np.abs(m - b)
         if near_a.all() or (~near_a).all():
             break
         a, b = m[near_a].mean(), m[~near_a].mean()
-    dot = float(np.exp(min(a, b)))
-    dash = float(np.exp(max(a, b)))
+    return float(min(a, b)), float(max(a, b))
+
+
+def dot_length(marks: list[int]) -> float:
+    """Dot length in hops: the lower of two clusters of mark lengths (dots, dashes ≈ 3 dots).
+
+    Noise spikes form a third, much shorter cluster; when the two clusters are further apart than dots
+    and dashes ever are, the lower one is noise and is dropped before trying again.
+    """
+    lo_hops = 1.2 / WPM_RANGE[1] / HOP_S
+    hi_hops = 1.2 / WPM_RANGE[0] / HOP_S
+    m = np.log(np.clip(np.asarray(marks, dtype=float), lo_hops * 0.5, hi_hops * 3.5))
+    for _ in range(3):
+        if len(m) < 2 or np.ptp(m) < 0.4:  # one cluster only: call it dots if short, dashes if long
+            guess = float(np.exp(np.median(m)))
+            return float(np.clip(guess if guess <= hi_hops else guess / 3, lo_hops, hi_hops))
+        a, b = _two_means(m)
+        upper = m > (a + b) / 2
+        if np.exp(b - a) > 4.5 and upper.sum() >= 4:
+            m = m[upper]
+            continue
+        break
+    dot, dash = float(np.exp(a)), float(np.exp(b))
     if dash / dot < 1.8:  # the clusters are not dot/dash: all one kind
         dot = dot if dot <= hi_hops else dot / 3
     return float(np.clip(dot, lo_hops, hi_hops))
 
 
 def decode(segments: list[list], adapt_marks: int = 24) -> tuple[str, list[float]]:
-    """Text, plus the dot length (hops) used along the way. The dot length follows the last marks."""
+    """Text, plus the dot length (hops) used along the way. The dot length follows the last marks.
+
+    Marks shorter than GLITCH_MARK dots count as gap (noise spikes); gaps shorter than DROPOUT_GAP dots
+    between two marks join them into one (a fade inside a dash).
+    """
     marks = [n for k, n in segments if k]
     if not marks:
         return "", []
     dot = dot_length(marks[:adapt_marks] if len(marks) >= 6 else marks)
     recent: list[int] = []
     text, symbol, dots_used = [], "", []
+    mark, gap = 0, 0
 
     def flush_char():
         nonlocal symbol
@@ -168,23 +191,41 @@ def decode(segments: list[list], adapt_marks: int = 24) -> tuple[str, list[float
             text.append(MORSE.get(symbol, "[err]"))
             symbol = ""
 
+    def commit_mark():
+        nonlocal symbol, dot
+        if not mark:
+            return
+        symbol += "." if mark < 2 * dot else "-"
+        recent.append(mark)
+        if len(recent) >= 8 and len(recent) % 4 == 0:
+            dot = dot_length(recent[-adapt_marks:])
+        dots_used.append(dot)
+
+    def take_gap():
+        if gap >= 5 * dot:  # word gap (7 dots nominal)
+            flush_char()
+            if text and text[-1] != " ":
+                text.append(" ")
+        elif gap >= 2 * dot:  # character gap (3 dots nominal)
+            flush_char()
+
     for key_down, n in segments:
-        if key_down:
-            symbol += "." if n < 2 * dot else "-"
-            recent.append(n)
-            if len(recent) >= 8 and len(recent) % 4 == 0:
-                dot = dot_length(recent[-adapt_marks:])
-            dots_used.append(dot)
+        if not key_down or n < GLITCH_MARK * dot:
+            gap += n
+            continue
+        if mark and gap < DROPOUT_GAP * dot:
+            mark += gap + n
         else:
-            if n >= 5 * dot:  # word gap (7 dots nominal)
-                flush_char()
-                if text and text[-1] != " ":
-                    text.append(" ")
-            elif n >= 2 * dot:  # character gap (3 dots nominal)
-                flush_char()
+            commit_mark()
+            take_gap()
+            mark = n
+        gap = 0
+    commit_mark()
     flush_char()
     return "".join(text).strip(), dots_used
 
+
+# ---------------------------------------------------------------- the whole chain
 
 def decode_audio(x: np.ndarray, fs: float, band_hz: tuple[float, float] = TONE_BAND) -> dict:
     if len(x) < fs:  # under a second of audio: nothing to decode
