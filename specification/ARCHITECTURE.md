@@ -20,7 +20,7 @@ flowchart LR
 
   subgraph MAC["The managed Mac — every inbound destroyed, outbound only"]
     subgraph CORE["sruti — one process"]
-      LINK["receiver link<br/>kiwiclient, reconnect w/ backoff"] --> SEG["segmenter<br/>pure, chars → pieces"]
+      LINK["receiver link<br/>own WebSocket client, reconnect w/ backoff"] --> SEG["segmenter<br/>pure, chars → pieces"]
       SEG --> STORE["session store<br/>var/sessions/*.jsonl, manual switch"]
       STORE --> PIECE["explain/piece — Gemini 3.8 Flash<br/>§2–3, English, ≤5 s per piece"]
       STORE --> SESS["explain/session — Claude Opus 5.5<br/>§4, Ukrainian"]
@@ -82,9 +82,9 @@ code. The window is a shell over the core: new behavior goes into the core, not 
 1. **Receiver link (`receiver`).** Opens an audio channel on the chosen KiwiSDR in CW mode at the chosen
    frequency, attaches the receiver's `CW_decoder` extension, starts it, and emits decoded characters with
    timestamps plus decoder status (speed, training). Reconnects with backoff; "receiver busy" and "time
-   limit reached" are states, not crashes. Built on `kiwiclient`. Also emits the **raw extension
-   messages** as events, so the config panel's capture inspector can show exactly what arrives from the
-   receiver's API.
+   limit reached" are states, not crashes. sruti's own small WebSocket client (§The receiver), not
+   `kiwiclient`. Also emits the **raw extension messages** as events, so the config panel's capture
+   inspector can show exactly what arrives from the receiver's API.
 2. **Segmenter (`segmenter`).** Pure logic: characters → pieces (§Pieces and sessions). It does not cut
    sessions; sessions are manual.
 3. **Session store (`store`).** One JSONL file per session under `var/sessions/`, append-only: a `session`
@@ -120,15 +120,41 @@ directory of about 870 receivers with load, bands and location (`kiwisdr.com/pub
 the Mac: a public KiwiSDR (Heppen, Belgium) connects through the endpoint filtering, and audio arrives as
 12 kHz mono 16-bit.
 
+**No `kiwiclient` in the product.** `kiwiclient` has no license (checked 2026-10-03 at commit `4eb733e`:
+no license file, no statement in the README or the code), which legally means all rights reserved. It
+serves only the v0.1 spike (`poc/receiver/cw_spike.py`), run from a local checkout in `var/kiwiclient/`
+that is never committed. The `receiver` module (v1.1) is sruti's own client for the two sockets below,
+written from the protocol the v0.1 captures show.
+
+**The two sockets.** One audio channel and its decoder are two WebSocket connections to the receiver,
+`ws://<host>:<port>/<ts>/SND` and `ws://<host>:<port>/<ts>/EXT`. The shared `<ts>` (a client-chosen
+timestamp) is what ties the extension to the channel. The SND socket carries the **tuning messages**; the
+audio frames that arrive on it are discarded, because the receiver decodes the CW itself.
+
+| Socket | Direction | Message | Meaning |
+|---|---|---|---|
+| both | → | `SET auth t=kiwi p=` | log in as a public listener (no password) |
+| both | → | `SET ident_user=sruti` | the name the receiver shows for this connection |
+| SND | → | `SET mod=cw low_cut=300 high_cut=700 freq=<carrier kHz>` | CW mode, the default passband, tuned so the given frequency is the passband centre (carrier = frequency − 0.5 kHz) |
+| SND | → | `SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50` | automatic gain, the receiver's defaults |
+| SND | → | `SET AR OK in=<audio_rate> out=44100` | acknowledge the audio rate the receiver announced |
+| SND | → | `SET squelch=0 max=0`, `SET genattn=0`, `SET gen=0 mix=-1` | squelch off, the receiver's test generator off |
+| SND | → | `SET keepalive` | once a second, or the receiver drops the channel |
+| EXT | → | `SET ext_no_keepalive` | the extension socket sends no keepalives |
+| both | ← | `MSG <name>=<value> …` | receiver status: `version_maj`, `version_min`, `audio_rate`, `sample_rate`, `ext_client_init`, and the error states `too_busy`, `badp`, `down`, `redirect` |
+
 **Its CW decoder.** The KiwiSDR decodes CW on the receiver (`extensions/CW_decoder`, a Goertzel decoder
-derived from UHSDR) and sends the text to the client. The protocol below is read from the KiwiSDR source
-and **not yet exercised end to end** (v0.1):
+derived from UHSDR) and sends the text to the client over the EXT socket. The protocol below is read from
+the KiwiSDR source (`extensions/CW_decoder/cw_decoder.cpp`, `web/extensions/CW_decoder/CW_decoder.js`)
+and **not yet exercised end to end** (v0.1). sruti sends the decoder messages in the browser client's
+order — start, tone offset, speed, then the threshold, which must follow `cw_wpm` because setting the
+speed re-initialises the decoder:
 
 | Direction | Message | Meaning |
 |---|---|---|
 | → | `SET ext_switch_to_client=CW_decoder first_time=1 rx_chan=0` | attach the extension to this connection's channel |
 | → | `SET cw_start=<training>` | start decoding; `<training>` is how much signal is used to learn the speed (browser default 100) |
-| → | `SET cw_pboff=<Hz>` | the audio tone the decoder listens on: passband centre − carrier |
+| → | `SET cw_pboff=<Hz>` | the audio tone the decoder listens on: \|passband centre − carrier\| — 500 Hz for the default CW passband |
 | → | `SET cw_wpm=<wpm>,<training>` | fixed speed; `0` = automatic |
 | → | `SET cw_auto_thresh=0\|1`, `SET cw_threshold=<linear>` | signal threshold (browser default: fixed, 47 dB) |
 | → | `SET cw_wsc=0\|1` | word-space correction |
@@ -138,12 +164,17 @@ and **not yet exercised end to end** (v0.1):
 | ← | `cw_train=<n>` | training progress; negative = error count |
 | ← | `cw_plot=<dB>,<polarity>,<threshold>` | signal level (ignored) |
 
-**Frequency and tone.** In CW mode the default passband is 300–700 Hz above the carrier. `kiwiclient`
-treats the frequency as the carrier unless `--pbc` makes it the passband centre. Spots and band plans give
-the signal's frequency, so sruti tunes with the given frequency at the passband centre. **Open:** with
-`--pbc`, the beacon on exactly 14.100 MHz came out as a ~1003 Hz tone, not the expected 500 Hz. The
-decoder only hears the tone at `cw_pboff`, so v0.1 establishes the true offset before anything depends on
-it.
+**Frequency and tone.** In CW mode the default passband is 300–700 Hz above the carrier. Spots and band
+plans give the signal's frequency, so sruti tunes with the given frequency at the passband centre: the
+carrier goes 0.5 kHz below it, the signal lands on a 500 Hz tone, and `cw_pboff=500` points the decoder at
+it. **Open:** an earlier test with `kiwiclient --pbc` heard the beacon on exactly 14.100 MHz as a ~1003 Hz
+tone, not the expected 500 Hz. The decoder only hears the tone at `cw_pboff`, so v0.1 measures the true
+offset before anything depends on it.
+
+**The raw capture.** Every text message crossing the two sockets can be written to a JSONL capture, one
+object per line: `{"t": <epoch seconds>, "ws": "SND" | "EXT", "dir": "→" | "←", "msg": "<the message
+exactly as on the wire>"}`. Binary audio frames and the once-a-second `SET keepalive` are left out. The
+v0.1 recordings are captures in this format, and v1.1's fake receiver replays them.
 
 **Being a guest.** One connection per run, identified as `sruti`. Public receivers limit slots and session
 time; the link reports both and backs off from a busy receiver.

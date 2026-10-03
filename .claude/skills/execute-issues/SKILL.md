@@ -63,7 +63,7 @@ Read its detailed section in the issues file: what needs to be done and the acce
 
 Follow `CLAUDE.md` and ARCHITECTURE.md. Route by component:
 
-- **`receiver`:** the KiwiSDR link on `kiwiclient` — the audio channel in CW mode at the chosen frequency,
+- **`receiver`:** the KiwiSDR link, sruti's own WebSocket client (never `kiwiclient`, which has no license) — the audio channel in CW mode at the chosen frequency,
   the `CW_decoder` extension (attach, `cw_start`, `cw_pboff`), `cw_chars` decoding with timestamps, decoder
   status (`cw_wpm`, `cw_train`), the raw extension messages emitted as events (for the capture inspector),
   reconnect with backoff, and "receiver busy" / "time limit reached" as states, not crashes. Listen only:

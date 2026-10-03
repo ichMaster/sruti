@@ -55,12 +55,12 @@ The product, built from the core outward. v1.1 stands up the project and the **r
 
 **Goal:** `sruti listen --receiver <host:port> --freq <kHz>` streams decoded text to the terminal (headless; the app window comes in v1.4).
 
-The Python project, its configuration and the **receiver link** on `kiwiclient`: it opens the audio channel, attaches the `CW_decoder` extension with the `cw_pboff` settled in v0.1, and emits decoded characters with timestamps, decoder status (speed, training), link states and the **raw extension messages** as events on the core event stream. It reconnects with backoff; "receiver busy" and "time limit reached" are states, not crashes. Listen only, and a polite guest: one connection per run, identified as `sruti`, nothing sent beyond the documented tuning and decoder `SET` messages. Depends on: v0.1.
+The Python project, its configuration and the **receiver link** — sruti's own WebSocket client for the SND and EXT sockets, written from the protocol the v0.1 captures show (`kiwiclient` has no license and stays out of the product): it opens the audio channel, attaches the `CW_decoder` extension with the `cw_pboff` settled in v0.1, and emits decoded characters with timestamps, decoder status (speed, training), link states and the **raw extension messages** as events on the core event stream. It reconnects with backoff; "receiver busy" and "time limit reached" are states, not crashes. Listen only, and a polite guest: one connection per run, identified as `sruti`, nothing sent beyond the documented tuning and decoder `SET` messages. Depends on: v0.1.
 
 **Tasks:**
 - **The project:** Python with `uv`, ruff, pytest and CI.
 - **Configuration:** the config file (`sruti.toml`) and `.env`.
-- **The receiver link:** the `receiver` module on `kiwiclient`, emitting characters, decoder status and the raw extension messages as events.
+- **The receiver link:** the `receiver` module — sruti's own client for the SND and EXT sockets — emitting characters, decoder status and the raw extension messages as events.
 - **Robustness:** reconnect with backoff; busy and time-limit states.
 
 **DoD:** an hour of listening survives a dropped connection; the raw capture replays to the same text.

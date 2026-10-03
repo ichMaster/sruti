@@ -38,7 +38,7 @@ Latest release: none yet.
 
 ## Layout and commands
 
-The components (ARCHITECTURE.md §Components): `receiver` (the KiwiSDR link on `kiwiclient`, also emitting
+The components (ARCHITECTURE.md §Components): `receiver` (the KiwiSDR link — sruti's own WebSocket client — also emitting
 the raw extension messages), `segmenter` (pure characters → pieces), `store` (append-only JSONL sessions
 under `var/sessions/`, listing and replay), `glossary/` (versioned data), `explain/piece` (Gemini 3.8
 Flash, gloss + message per piece), `explain/session` (Claude Opus 5.5, on the Explain action), `ui/app`
@@ -159,4 +159,5 @@ Changing any of these updates ARCHITECTURE.md and the test that pins it, in the 
 - Both tiers cost money: the piece tier ≈ $0.003 per piece (≈ $0.3 per hour of lively traffic, doubling
   in 2027), the session tier ≈ $0.03 per Explain press. The costs are always visible, and no test or gate
   ever calls a paid API.
-- `kiwiclient`'s license must be checked (v0.1) before the project depends on it.
+- `kiwiclient` has no license: only the v0.1 spike uses it, from an uncommitted checkout in `var/kiwiclient/`.
+  The `receiver` module is sruti's own client; never vendor, copy or depend on `kiwiclient` in the product.
