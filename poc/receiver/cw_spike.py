@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""v0.1 spike: decoded CW text from a public KiwiSDR, live, with a raw capture.
+"""v0.1 spike: CW from a public KiwiSDR's audio, decoded on the Mac, with a raw capture.
 
-Opens one CW audio channel (SND) and the CW_decoder extension (EXT) on the receiver, prints the decoded
-text as it arrives and writes every text message crossing the two sockets to a JSONL capture. Replay
-mode prints a saved capture's text and never connects.
+Opens one CW audio channel (SND) tuned to the signal's own frequency, records the audio as WAV beside a
+JSONL capture of every text message, and decodes the WAV with sruti's prototype decoder (cw_decode.py)
+when the session ends. The receiver's own CW_decoder extension (EXT) is used only with --kiwi-decoder.
+Replay mode prints a saved capture's text and never connects.
 
 kiwiclient has no license (checked 2026-10-03 at jks-prv/kiwiclient 4eb733e): it is used only by this
 spike, from a local checkout in var/kiwiclient that is never committed. sruti's own receiver client is
@@ -13,9 +14,10 @@ Setup, once:
     git clone https://github.com/jks-prv/kiwiclient.git var/kiwiclient
     git -C var/kiwiclient checkout 4eb733e6b6147f7fbeb97ced64cdac029b202d18
 
-Listen and record (Ctrl-C to stop):
-    uv run --no-project --with numpy python poc/receiver/cw_spike.py \\
-        --receiver <host>:8073 --freq 14100 --out var/recordings/beacons.jsonl
+Listen, record and decode (Ctrl-C to stop):
+    uv run --no-project --with numpy python poc/receiver/cw_spike.py --browser-path \\
+        --receiver <host>:8073 --freq 14100 \\
+        --out var/recordings/beacons.jsonl --audio var/recordings/beacons.wav
 
 Replay a capture (offline):
     python3 poc/receiver/cw_spike.py --replay var/recordings/beacons.jsonl
@@ -359,7 +361,7 @@ def main() -> int:
     ap.add_argument("--decoder-test", action="store_true",
                     help="diagnostic: have the receiver play its built-in CW test file through the decoder")
     ap.add_argument("--browser-path", action="store_true",
-                    help="experimental: use the browser's /ws/kiwi/ WebSocket path instead of kiwiclient's")
+                    help="connect like the browser page: the /VER timestamp and the /ws/no_wf/ path")
     args = ap.parse_args()
     if args.replay:
         return replay(pathlib.Path(args.replay))
