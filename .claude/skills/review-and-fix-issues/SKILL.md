@@ -50,7 +50,7 @@ Read the in-scope code and take the highest-risk areas first. Be **adversarial**
 defects, not restatements of what works.
 
 - **Listen only, a polite guest:**
-  - Does any code path send the receiver anything beyond the documented tuning and decoder `SET` messages?
+  - Does any code path send the receiver anything beyond the documented tuning messages?
   - Is it one connection per run, identified as `sruti`?
   - Does the link back off from a busy receiver instead of hammering it, respect the time limit, and
     disconnect when idle?
@@ -58,9 +58,14 @@ defects, not restatements of what works.
   - Does a dropped WebSocket reconnect with backoff, and are "busy" and "time limit reached" states rather
     than crashes?
   - Does a reconnect duplicate or lose characters in the session store?
-  - Is `cw_chars` URI-decoding safe against malformed input, and are unknown extension messages ignored
-    rather than fatal?
-  - Is the tone offset (`cw_pboff`) set per ARCHITECTURE.md, so the decoder actually hears the signal?
+  - Are malformed audio frames and unknown messages ignored rather than fatal?
+  - Is the channel tuned to the signal's own frequency (no passband-centre shift), so the tone lands
+    inside the 300–700 Hz passband?
+- **Decoder:**
+  - Does noise alone stay silent (tone prominence and contrast checks), rather than decoding as `E`/`T`?
+  - Does the speed adapt when the operator changes speed, and do word gaps survive a slow sender?
+  - Is an unknown code `[err]`, never a guessed letter? Are prosigns emitted whole?
+  - Is every stage pure and tested on synthesized Morse at known speeds and signal-to-noise ratios?
 - **Segmenter:**
   - Do pieces close exactly on the specified rules — an end-of-turn prosign **standing alone** (`K`, `KN`,
     `BK`, `AR`, `SK`), the pause, the length cap — and does a prosign inside a word *not* cut?
@@ -106,7 +111,7 @@ defects, not restatements of what works.
   - Is the bridge tested with a fake window (commands in, events out, in order)?
   - Does any event push (`evaluate_js`) build JavaScript from untrusted text without JSON-encoding it?
   - Does the config panel apply changes on reconnect and save them to the config file, and does the
-    capture inspector show the raw extension messages next to how each parsed?
+    capture inspector show the raw receiver messages next to how each parsed?
   - Does the session switcher open past sessions read-only, and does "new session" retune?
   - Does the app open any listening socket — an HTTP server, a debug port (it must not), and does a test
     pin that the window is created from a string?
@@ -136,7 +141,7 @@ For each finding, capture:
 - a **proposed fix**.
 
 Cross-check against ROADMAP.md and ARCHITECTURE.md. If a gap is already scheduled for a later phase (e.g.
-local decoding is v2), note that instead of treating it as new.
+finding traffic is v2), note that instead of treating it as new.
 
 ### Step 2: Write the recommendations document (the plan)
 
@@ -156,7 +161,7 @@ Decide **FIX NOW vs DEFER** honestly:
   listening loop, an invented call sign, a hammered receiver, the API key in a log, a saved session that
   doesn't replay.
 - **DEFER →** means larger work, or work a later phase already owns. Give the home: a later phase
-  (`v1.2`…`v1.5`, `v2`, `v3`), `backlog` (no phase owns it) or `cleanup (/simplify)`. Do **not** pull it
+  (`v1.2`…`v1.6`, `v2`), `backlog` (no phase owns it) or `cleanup (/simplify)`. Do **not** pull it
   forward.
 
 Commit the doc as the plan (`docs: vA.B code review`) **and push it** if a remote exists. The review is worth

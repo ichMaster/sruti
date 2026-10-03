@@ -63,12 +63,17 @@ Read its detailed section in the issues file: what needs to be done and the acce
 
 Follow `CLAUDE.md` and ARCHITECTURE.md. Route by component:
 
-- **`receiver`:** the KiwiSDR link, sruti's own WebSocket client (never `kiwiclient`, which has no license) — the audio channel in CW mode at the chosen frequency,
-  the `CW_decoder` extension (attach, `cw_start`, `cw_pboff`), `cw_chars` decoding with timestamps, decoder
-  status (`cw_wpm`, `cw_train`), the raw extension messages emitted as events (for the capture inspector),
-  reconnect with backoff, and "receiver busy" / "time limit reached" as states, not crashes. Listen only:
-  send nothing to the receiver beyond the documented tuning and decoder `SET` messages; one connection per
-  run, identified as `sruti`.
+- **`receiver`:** the KiwiSDR link, sruti's own WebSocket client (never `kiwiclient`, which has no
+  license) — it connects like the browser page (`/VER`, the `/ws/no_wf/<ts>/SND` path, the greeting), tunes
+  one audio channel in CW mode at the signal's frequency, turns compression off, and emits the 12 kHz PCM
+  audio and the signal level as events, plus the raw messages (for the capture inspector). Reconnect with
+  backoff; "receiver busy" (`badp=1`) and "time limit reached" are states, not crashes. Listen only: send
+  nothing to the receiver beyond the documented tuning messages; one connection per run, identified as
+  `sruti`.
+- **`decoder`:** sruti's own CW decoder, pure numpy per ARCHITECTURE.md §The decoder — tone detection,
+  envelope, adaptive threshold, run lengths, adaptive dot length, the Morse table with prosigns — audio
+  in, timestamped characters out, `[err]` for an unknown code, nothing at all for noise. Tested on
+  synthesized Morse at known speeds and signal-to-noise ratios and on recorded WAVs.
 - **`segmenter`:** pure logic, characters → pieces per ARCHITECTURE.md §Pieces and sessions. Thresholds
   come from configuration; the clock is injected. It never cuts sessions — sessions are manual.
 - **`store`:** one append-only JSONL file per session under `var/sessions/`, in the record shapes of
@@ -244,7 +249,7 @@ Commit the report (`docs: vA.B execution report`, with the trailer) and push.
   in the same commit.
 - **Mission invariants:**
   - **Listen only.** No code path transmits or keys anything; nothing is sent to the receiver beyond the
-    documented tuning and decoder `SET` messages.
+    documented tuning messages.
   - **Never invent.** Unreadable text is `[...]`; a call sign is never "corrected" into a different one.
   - **A polite guest.** One connection per run, identified as `sruti`; back off from busy receivers and
     respect their time limits.

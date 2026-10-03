@@ -54,9 +54,11 @@ Show the ordered plan and proceed. With `--dry-run`, stop here.
 2. **Read** its section: what needs to be done and the acceptance criteria.
 3. **Implement** per `CLAUDE.md` and ARCHITECTURE.md, routed by component. The routing is the same as
    `/execute-issues` Step 2c:
-   - `receiver`: the KiwiSDR link, sruti's own WebSocket client (never `kiwiclient`) — audio channel, `CW_decoder` extension, `cw_chars`
-     decoding, raw extension messages as events, reconnect with backoff, busy and time-limit states.
+   - `receiver`: the KiwiSDR link, sruti's own WebSocket client (never `kiwiclient`) — one CW audio
+     channel, audio and raw messages as events, reconnect with backoff, busy and time-limit states.
      Listen only; one connection, identified as `sruti`.
+   - `decoder`: sruti's own CW decoder, pure — audio in, timestamped characters out; tested on
+     synthesized Morse and recorded WAVs.
    - `segmenter`: pure characters → pieces, thresholds from configuration, clock injected; sessions are
      manual, not the segmenter's.
    - `store`: append-only JSONL sessions under `var/sessions/` in ARCHITECTURE.md's record shapes; replay

@@ -7,11 +7,12 @@ specification; the look is yours.
 ## 1. The product
 
 sruti is a private listening tool for one person on a Mac. It connects to a public web radio receiver
-(a KiwiSDR) that decodes Morse code (CW) from amateur radio conversations into text, and explains what it
-hears. The decoder's text is damaged — letters dropped, words split, `[err]` for unknown codes — and dense
-with abbreviations, so the window shows it at four levels side by side, live:
+(a KiwiSDR), takes its audio, decodes the Morse code (CW) of amateur radio conversations into text with
+its own decoder, and explains what it hears. The decoded text is damaged — letters dropped, words split,
+`[err]` for unknown codes — and dense with abbreviations, so the window shows it at four levels side by
+side, live:
 
-1. **Original text** — exactly what the decoder sent, character by character.
+1. **Original text** — exactly what sruti's decoder produced, character by character.
 2. **Word by word** — each token of a piece and what it means (English).
 3. **Message** — what the operator actually said, as a natural English sentence.
 4. **What is going on** — the whole conversation explained in Ukrainian, only when the user asks.
@@ -38,7 +39,8 @@ One desktop window, default 1320×860, minimum 980×640. No mobile layout.
 - **Session name**, click to rename in place (Enter saves, Esc cancels). Auto-names look like
   `2026-10-02 21:40 · <receiver> · 7020 kHz`; user names look like "Italian ragchew".
 - Receiver (`host:port`), frequency (kHz), session start time.
-- **Link status** with speed, e.g. "listening · 22 WPM" (all states in §4).
+- **Link status** with the decoder's reading, e.g. "listening · 22 WPM · tone 620 Hz · 21 dB" — speed,
+  the tone it locked on, signal over noise (all states in §4).
 - **Stop / Start listening** toggle.
 - **Running costs**: Gemini (sections 2–3, grows by about $0.003 per piece) and Opus (section 4, about
   $0.03 per Explain).
@@ -75,21 +77,22 @@ saved session: <name> · read-only" and **Back to live**. Explain is disabled th
 
 A side panel with the receiver connection settings and **Save** ("Saved. Applied on the next tune."):
 
-- receiver `host:port`; frequency, kHz; tone offset `cw_pboff`, Hz; speed `cw_wpm` (0 = auto); training
-  `cw_start`; threshold; word-space correction on/off;
+- receiver `host:port`; frequency, kHz;
+- decoder: tone (automatic, or fixed in Hz); speed (automatic, or fixed in WPM); threshold contrast, dB;
 - piece pause, s; piece maximum, characters;
 - language of sections 2–3; language of section 4.
 
 Below it, the **capture inspector**: a live table of the raw messages crossing the receiver connection —
-time, direction (→ sent, ← received), the raw message in monospace, and how sruti parsed it. Keeps the
+time, direction (→ sent, ← received, · the decoder), the raw message in monospace, and how sruti parsed
+it. Audio frames are not listed one by one; a row every few seconds gives their signal level. Keeps the
 last 400 rows and auto-scrolls. Its purpose is trust: the user checks here exactly what the receiver
-sends.
+sends and what the decoder makes of it.
 
 ## 4. States to design
 
 | Area | States |
 |---|---|
-| Link status | connecting · listening (with WPM) · lull (a piece is closing) · receiver busy (retrying in N s) · receiver time limit reached · reconnecting (attempt N) · stopped by the user · recording ended (replays only) |
+| Link status | connecting · listening (with WPM, tone, signal over noise) · no signal (audio arrives, the decoder hears no CW) · lull (a piece is closing) · receiver busy (retrying in N s) · receiver time limit reached · reconnecting (attempt N) · stopped by the user · recording ended (replays only) |
 | Sections 2–3 | waiting for the first piece · filled · one piece without an explanation ("no explanation — raw text only") · Gemini key missing (sections 2–3 stay empty, with a one-line hint) |
 | Section 4 | empty (invitation to press Explain) · explaining (button disabled, a progress line) · result · failed (previous explanation kept, plus an error note) · off — no Claude key · disabled in a read-only session |
 | Section 3 entries | a normal entry · ×3 repeat · ⟲ rewritten block · a correction |
@@ -151,11 +154,14 @@ pass back) · `JDE` → J (IU3FEJ (?)) de (from) · `HW` → how copy? · `K` �
 
 | Time | Dir | Raw | Parsed |
 |---|---|---|---|
-| 21:40:03 | → | `SET ext_switch_to_client=CW_decoder first_time=1 rx_chan=0` | attach the CW decoder |
-| 21:40:03 | → | `SET cw_pboff=500` | listen on a 500 Hz tone |
-| 21:40:04 | ← | `cw_train=75` | training 75 |
-| 21:40:05 | ← | `cw_wpm=22` | speed 22 WPM |
-| 21:40:05 | ← | `cw_chars=%5Berr%5D` | character "[err]" |
+| 21:40:02 | → | `SET auth t=kiwi p=` | log in as a public listener |
+| 21:40:02 | → | `SET ident_user=sruti` | identify as sruti |
+| 21:40:02 | → | `SET mod=cw low_cut=300 high_cut=700 freq=7021.980` | CW at 7021.98 kHz |
+| 21:40:02 | → | `SET compression=0` | uncompressed audio |
+| 21:40:03 | ← | `MSG audio_rate=12000 sample_rate=12001.135` | audio at 12 kHz |
+| 21:40:03 | ← | `MSG badp=1` | all free channels taken — retrying |
+| 21:40:13 | ← | `SND · 60 frames · −94 dBm` | audio arriving, signal −94 dBm |
+| 21:40:15 | · | `tone 620 Hz · 22 WPM · 21 dB` | decoder locked on |
 
 **Costs after this session:** Gemini $0.0087 · Opus $0.03.
 
@@ -190,7 +196,7 @@ Hand back:
    you changed or could not fit.
 
 These go into `specification/design/` in the sruti repository and become the window's page in the
-implementation (ROADMAP v1.4).
+implementation (ROADMAP v1.5).
 
 ## 8. Wiring contract
 
@@ -203,8 +209,8 @@ event, in order.
 | `type` | Fields | Meaning |
 |---|---|---|
 | `session` | `id, name, receiver, freq_khz, started, pieces`, `renamed?` | a new session started (clear the sections), or a rename |
-| `status` | `state` (§4 link states: `connecting`, `listening`, `lull`, `busy`, `time_limit`, `reconnecting`, `stopped`, `ended`), `wpm?`, `retry_in_s?`, `attempt?` | link status |
-| `raw` | `dir` (`→` / `←`), `msg`, `parsed`, `t` | one capture-inspector row |
+| `status` | `state` (§4 link states: `connecting`, `listening`, `no_signal`, `lull`, `busy`, `time_limit`, `reconnecting`, `stopped`, `ended`), `wpm?`, `tone_hz?`, `snr_db?`, `retry_in_s?`, `attempt?` | link status and the decoder's reading |
+| `raw` | `dir` (`→` / `←` / `·`), `msg`, `parsed`, `t` | one capture-inspector row |
 | `char` | `ch`, `t` | one decoded unit for section 1; `[err]` arrives whole |
 | `piece` | `seq, raw, cut` (`prosign` / `pause` / `length`) | a piece closed: draw its divider |
 | `explanation` (`tier: "piece"`) | `piece_seq, action` (`none` / `append` / `rebuild`), `gloss` (list of `[token, meaning]`), `message?`, `rebuilt?` (list of strings), `latency_ms, cost_usd, model` — or `piece_seq, error` | sections 2–3 for one piece |

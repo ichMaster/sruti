@@ -17,7 +17,7 @@ Bump the project version, update every version reference, write release notes, c
 - `/release-version 1.3.1 Fix schema fallback to raw text; clock injected in the segmenter`: a patch with
   given notes.
 
-**Version scheme (`A.B.C`):** `A` = roadmap version (v0→0 … v3→3), `B` = phase within it, `C` = a
+**Version scheme (`A.B.C`):** `A` = roadmap version (v0→0 … v2→2), `B` = phase within it, `C` = a
 post-release fix on that phase. ROADMAP phase `vA.B` → release `A.B.0`, tag `vA.B.0`; a later fix on it
 bumps `C` (`A.B.1`, …). Releases are cut per phase. A version beyond the roadmap (e.g. `1.0.0`-style
 semantics) is a decision the owner makes explicitly.

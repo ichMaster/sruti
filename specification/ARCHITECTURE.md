@@ -9,7 +9,7 @@ flowchart LR
   end
 
   subgraph RXS["Public KiwiSDR — someone else's receiver"]
-    DEC["SDR + CW_decoder extension<br/>decodes at the receiver · one guest slot"]
+    DEC["SDR · CW audio channel<br/>12 kHz audio · one guest slot"]
   end
 
   subgraph NET["The internet — crossed outbound only"]
@@ -20,7 +20,8 @@ flowchart LR
 
   subgraph MAC["The managed Mac — every inbound destroyed, outbound only"]
     subgraph CORE["sruti — one process"]
-      LINK["receiver link<br/>own WebSocket client, reconnect w/ backoff"] --> SEG["segmenter<br/>pure, chars → pieces"]
+      LINK["receiver link<br/>own WebSocket client, reconnect w/ backoff"] --> CWD["decoder<br/>audio → characters, on the Mac"]
+      CWD --> SEG["segmenter<br/>pure, chars → pieces"]
       SEG --> STORE["session store<br/>var/sessions/*.jsonl, manual switch"]
       STORE --> PIECE["explain/piece — Gemini 3.8 Flash<br/>§2–3, English, ≤5 s per piece"]
       STORE --> SESS["explain/session — Claude Opus 5.5<br/>§4, Ukrainian"]
@@ -31,8 +32,8 @@ flowchart LR
   LANZ["The LAN — router, ich-picobox<br/>(unused in v1)"]
 
   OPS -. "HF radio" .-> DEC
-  LINK -- "ws :8073 · SET tuning + decoder params only" --> DEC
-  DEC == "SND audio + EXT cw_chars / cw_wpm / cw_train" ==> LINK
+  LINK -- "ws :8073 · SET tuning only" --> DEC
+  DEC == "SND audio, 12 kHz PCM + status" ==> LINK
   PIECE -- "https :443 · per closed piece" --> GEM
   SESS -- "https :443 · on the Explain press only" --> API
   APP -. "pick a receiver (manual, v0–v1)" .-> DIR
@@ -43,15 +44,15 @@ flowchart LR
 The full annotated diagram — every port, every perimeter, the guards on each crossing — is
 [diagrams/ports-and-perimeters.html](diagrams/ports-and-perimeters.html); open it locally in a browser.
 
-One process, one receiver, one frequency at a time. Data flows one way — characters → pieces →
+One process, one receiver, one frequency at a time. Data flows one way — audio → characters → pieces →
 explanations — every step is appended to the session store, and the app's window renders what the core
 emits. Nothing in sruti listens on any port.
 
 ## Core and the desktop app
 
 The core is UI-agnostic. Components talk through an in-process **event stream** (an asyncio queue): the
-receiver emits characters, decoder status, link states and the raw extension messages; the segmenter
-emits pieces; the explainers emit explanations; the store persists everything it sees. The interface
+receiver emits audio blocks, the signal level, link states and the raw messages; the decoder emits
+characters and its status; the segmenter emits pieces; the explainers emit explanations; the store persists everything it sees. The interface
 subscribes to the stream and sends back a small, fixed set of **commands**: `tune` (frequency in kHz,
 required; receiver optional, defaulting to the current one — tuning is what switches the session),
 `start`/`stop`, `explain` (the section-4 button), `open-session`, `rename-session`, `set-config`.
@@ -72,26 +73,28 @@ required; receiver optional, defaulting to the current one — tuning is what sw
   (asks for a frequency, the receiver optional); the session switcher and the config panel with the
   capture inspector as side panels.
 - **Headless mode** (`sruti listen --receiver <host:port> --freq <kHz>`) runs the same core with the
-  character stream printed to the terminal — for v1.1, before the app exists, and for debugging.
+  character stream printed to the terminal — from v1.2, before the app exists, and for debugging.
 
-Everything below the window — receiver, segmenter, store, explainers, glossary — never imports the app's
+Everything below the window — receiver, decoder, segmenter, store, explainers, glossary — never imports the app's
 code. The window is a shell over the core: new behavior goes into the core, not into the page.
 
 ## Components
 
-1. **Receiver link (`receiver`).** Opens an audio channel on the chosen KiwiSDR in CW mode at the chosen
-   frequency, attaches the receiver's `CW_decoder` extension, starts it, and emits decoded characters with
-   timestamps plus decoder status (speed, training). Reconnects with backoff; "receiver busy" and "time
-   limit reached" are states, not crashes. sruti's own small WebSocket client (§The receiver), not
-   `kiwiclient`. Also emits the **raw extension messages** as events, so the config panel's capture
-   inspector can show exactly what arrives from the receiver's API.
-2. **Segmenter (`segmenter`).** Pure logic: characters → pieces (§Pieces and sessions). It does not cut
+1. **Receiver link (`receiver`).** Connects to the chosen KiwiSDR the way its browser page does, opens one
+   audio channel in CW mode at the chosen frequency and emits the uncompressed 12 kHz audio in blocks with
+   timestamps, plus the signal level. Reconnects with backoff; "receiver busy", "all free channels taken"
+   and "time limit reached" are states, not crashes. sruti's own small WebSocket client (§The receiver),
+   not `kiwiclient`. Also emits the **raw messages** as events, so the config panel's capture inspector can
+   show exactly what arrives from the receiver.
+2. **Decoder (`decoder`).** sruti's own CW decoder: audio → characters with timestamps, prosigns as strings,
+   unknown codes as `[err]`, plus its status (tone, speed, signal over noise). §The decoder.
+3. **Segmenter (`segmenter`).** Pure logic: characters → pieces (§Pieces and sessions). It does not cut
    sessions; sessions are manual.
-3. **Session store (`store`).** One JSONL file per session under `var/sessions/`, append-only: a `session`
+4. **Session store (`store`).** One JSONL file per session under `var/sessions/`, append-only: a `session`
    header (auto name, renameable), then every character, piece and explanation with timestamps. The source
    of replays, test fixtures and new golden examples. Lists saved sessions by name and replays one into
    the event stream, read-only.
-4. **Glossary (`glossary/`).** Versioned data: Q-codes, prosigns, common abbreviations, per-language CW
+5. **Glossary (`glossary/`).** Versioned data: Q-codes, prosigns, common abbreviations, per-language CW
    habits (Italian `ET` for "and", `CAMBIO` for "over"), call-sign prefix basics. Rendered **in full**
    into both prompts as part of the stable prefix — it is compact (a few hundred entries, ~2–3K tokens),
    and the stable prefix is exactly what gets cached: the Gemini API can cache it across pieces, the
@@ -99,17 +102,17 @@ code. The window is a shell over the core: new behavior goes into the core, not 
    editing a data line, and both tiers speak the same terms. A full prefix→country table (CTY-scale,
    thousands of rows) never goes into a prompt: that is a code lookup (ROADMAP §Deferred), its result
    injected per heard call sign.
-5. **Piece explainer (`explain/piece`).** Per piece — buffered by the segmenter, never word by word as it
+6. **Piece explainer (`explain/piece`).** Per piece — buffered by the segmenter, never word by word as it
    arrives: instructions + glossary + the session's last raw pieces + the recent section-3 entries + the
    new piece → Gemini 3.8 Flash with a response schema → `{gloss, action, message | rebuilt}`. `gloss`
    maps the raw text token by token (word, abbreviation, Q-code, prosign, call sign → its expansion and
    meaning); `action` is `none` (nothing new — a repeat), `append` (`message`: one natural entry, CW
    repetitions collapsed, nothing invented) or `rebuild` (`rebuilt`: a replacement for the recent
    entries it was shown, marked "⟲" on screen). They fill sections 2 and 3.
-6. **Session explainer (`explain/session`).** Only when the user triggers **Explain**: the whole session →
+7. **Session explainer (`explain/session`).** Only when the user triggers **Explain**: the whole session →
    Claude Opus 5.5 → a full explanation of what is going on, in the style of the reference answer. Never
    on a timer, never automatic. It fills section 4.
-7. **Desktop app (`ui/app`).** The pywebview window, its page and the bridge object that exposes the
+8. **Desktop app (`ui/app`).** The pywebview window, its page and the bridge object that exposes the
    core commands. §Core and the desktop app, §The four sections, §Configuration.
 
 ## The receiver
@@ -120,64 +123,82 @@ directory of about 870 receivers with load, bands and location (`kiwisdr.com/pub
 the Mac: a public KiwiSDR (Heppen, Belgium) connects through the endpoint filtering, and audio arrives as
 12 kHz mono 16-bit.
 
+**Reachable receivers.** The Mac's corporate web filter blocks the "dynamic-dns" category, so receivers on
+`ddns.net`, `hopto.org` and similar hosts cannot be reached; sruti uses receivers on ordinary domains. The
+directory itself is plain HTTP (`kiwisdr.com` serves nothing on port 443).
+
 **No `kiwiclient` in the product.** `kiwiclient` has no license (checked 2026-10-03 at commit `4eb733e`:
 no license file, no statement in the README or the code), which legally means all rights reserved. It
 serves only the v0.1 spike (`poc/receiver/cw_spike.py`), run from a local checkout in `var/kiwiclient/`
-that is never committed. The `receiver` module (v1.1) is sruti's own client for the two sockets below,
+that is never committed. The `receiver` module (v1.1) is sruti's own client for the audio channel,
 written from the protocol the v0.1 captures show.
 
-**The two sockets.** One audio channel and its decoder are two WebSocket connections to the receiver,
-`ws://<host>:<port>/<ts>/SND` and `ws://<host>:<port>/<ts>/EXT`. The shared `<ts>` (a client-chosen
-timestamp) is what ties the extension to the channel. The SND socket carries the **tuning messages**; the
-audio frames that arrive on it are discarded, because the receiver decodes the CW itself.
-
-| Socket | Direction | Message | Meaning |
-|---|---|---|---|
-| both | → | `SET auth t=kiwi p=` | log in as a public listener (no password) |
-| both | → | `SET ident_user=sruti` | the name the receiver shows for this connection |
-| SND | → | `SET mod=cw low_cut=300 high_cut=700 freq=<carrier kHz>` | CW mode, the default passband, tuned so the given frequency is the passband centre (carrier = frequency − 0.5 kHz) |
-| SND | → | `SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50` | automatic gain, the receiver's defaults |
-| SND | → | `SET AR OK in=<audio_rate> out=44100` | acknowledge the audio rate the receiver announced |
-| SND | → | `SET squelch=0 max=0`, `SET genattn=0`, `SET gen=0 mix=-1` | squelch off, the receiver's test generator off |
-| SND | → | `SET keepalive` | once a second, or the receiver drops the channel |
-| EXT | → | `SET ext_no_keepalive` | the extension socket sends no keepalives |
-| both | ← | `MSG <name>=<value> …` | receiver status: `version_maj`, `version_min`, `audio_rate`, `sample_rate`, `ext_client_init`, and the error states `too_busy`, `badp`, `down`, `redirect` |
-
-**Its CW decoder.** The KiwiSDR decodes CW on the receiver (`extensions/CW_decoder`, a Goertzel decoder
-derived from UHSDR) and sends the text to the client over the EXT socket. The protocol below is read from
-the KiwiSDR source (`extensions/CW_decoder/cw_decoder.cpp`, `web/extensions/CW_decoder/CW_decoder.js`)
-and **not yet exercised end to end** (v0.1). sruti sends the decoder messages in the browser client's
-order — start, tone offset, speed, then the threshold, which must follow `cw_wpm` because setting the
-speed re-initialises the decoder:
+**Connecting like the browser page.** sruti first asks `http://<host>:<port>/VER`, which answers
+`{"maj", "min", "ts", "sp"}`; `ts` is the connection timestamp the receiver issues (bit 62 set, the
+receiver's "new timestamp space"). The audio channel is then `ws://<host>:<port>/ws/no_wf/<ts>/SND` —
+the browser page's path for a page without a waterfall. Some receivers close `kiwiclient`'s older
+`/<ts>/SND` path right after `auth` (seen in v0.1 on a v1.902 receiver).
 
 | Direction | Message | Meaning |
 |---|---|---|
-| → | `SET ext_switch_to_client=CW_decoder first_time=1 rx_chan=0` | attach the extension to this connection's channel |
-| → | `SET cw_start=<training>` | start decoding; `<training>` is how much signal is used to learn the speed (browser default 100) |
-| → | `SET cw_pboff=<Hz>` | the audio tone the decoder listens on: \|passband centre − carrier\| — 500 Hz for the default CW passband |
-| → | `SET cw_wpm=<wpm>,<training>` | fixed speed; `0` = automatic |
-| → | `SET cw_auto_thresh=0\|1`, `SET cw_threshold=<linear>` | signal threshold (browser default: fixed, 47 dB) |
-| → | `SET cw_wsc=0\|1` | word-space correction |
-| → | `SET cw_stop` | stop decoding |
-| ← | `cw_chars=<URI-encoded text>` | decoded characters; prosigns as strings, unknown codes as `[err]` |
-| ← | `cw_wpm=<n>` | current estimated speed |
-| ← | `cw_train=<n>` | training progress; negative = error count |
-| ← | `cw_plot=<dB>,<polarity>,<threshold>` | signal level (ignored) |
+| → | `SET auth t=kiwi p=` | log in as a public listener (no password) |
+| → | `SERVER DE CLIENT sruti SND` | the page's greeting, sent right after `auth` |
+| → | `SET ident_user=sruti` | the name the receiver shows for this connection |
+| → | `SET mod=cw low_cut=300 high_cut=700 freq=<kHz>` | CW mode, the default passband, at the signal's own frequency |
+| → | `SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50` | automatic gain, the receiver's defaults |
+| → | `SET compression=0` | plain 16-bit samples instead of IMA ADPCM |
+| → | `SET AR OK in=<audio_rate> out=44100` | acknowledge the audio rate the receiver announced |
+| → | `SET squelch=0 max=0`, `SET genattn=0`, `SET gen=0 mix=-1` | squelch off, the receiver's test generator off |
+| → | `SET keepalive` | once a second, or the receiver drops the channel |
+| ← | `MSG <name>=<value> …` | receiver status: `version_maj`, `version_min`, `audio_rate`, `sample_rate`, `client_public_ip`, `rx_chans`, `chan_no_pwd`, `max_camp`, `cfg_loaded`, and the error states `badp=1` (all channels without a password are taken), `too_busy`, `down`, `redirect` |
+| ← | `SND <binary frame>` | flags (1 byte), sequence (4, little-endian), S-meter (2, big-endian; dBm = 0.1 × value − 127), then the samples: 16-bit big-endian at ~12 kHz when uncompressed |
 
-**Frequency and tone.** In CW mode the default passband is 300–700 Hz above the carrier. Spots and band
-plans give the signal's frequency, so sruti tunes with the given frequency at the passband centre: the
-carrier goes 0.5 kHz below it, the signal lands on a 500 Hz tone, and `cw_pboff=500` points the decoder at
-it. **Open:** an earlier test with `kiwiclient --pbc` heard the beacon on exactly 14.100 MHz as a ~1003 Hz
-tone, not the expected 500 Hz. The decoder only hears the tone at `cw_pboff`, so v0.1 measures the true
-offset before anything depends on it.
+**Frequency and tone.** In CW mode the receiver takes `freq` as the signal's own frequency and puts it on
+a tone near 500 Hz, inside the 300–700 Hz passband. Passing the frequency minus 0.5 kHz — `kiwiclient`'s
+passband-centre option — moves the signal to ~1000 Hz, out of the passband: that was the ~1003 Hz tone an
+early test heard on the 14.100 MHz beacon, and it silenced v0.1's first recordings. The decoder finds the
+tone wherever it lands in the passband, so no exact offset is needed.
 
-**The raw capture.** Every text message crossing the two sockets can be written to a JSONL capture, one
-object per line: `{"t": <epoch seconds>, "ws": "SND" | "EXT", "dir": "→" | "←", "msg": "<the message
-exactly as on the wire>"}`. Binary audio frames and the once-a-second `SET keepalive` are left out. The
-v0.1 recordings are captures in this format, and v1.1's fake receiver replays them.
+**The receiver's own decoder is not used.** KiwiSDR has a CW decoder extension (`CW_decoder`, over a
+second, EXT socket). Many receivers do not offer it — the list a receiver sends was empty on one of the
+v0.1 receivers — and where it was offered, it attached to sruti's channel but never processed its audio,
+not even its own test file. sruti decodes on the Mac instead (§The decoder); the extension stays an
+optional second source (ROADMAP §Deferred), and the spike keeps it behind `--kiwi-decoder`.
+
+**The raw capture.** Every text message crossing the socket is written to a JSONL capture, one object per
+line: `{"t": <epoch seconds>, "ws": "SND", "dir": "→" | "←", "msg": "<the message exactly as on the
+wire>"}`; the owner's address in `MSG client_public_ip` is masked, binary audio frames and the
+once-a-second `SET keepalive` are left out. The audio goes beside it as a WAV file (mono, 16-bit, 12 kHz).
+The v0.1 recordings are this pair, and the fake receiver replays them.
 
 **Being a guest.** One connection per run, identified as `sruti`. Public receivers limit slots and session
-time; the link reports both and backs off from a busy receiver.
+time; the link reports both and backs off from a busy or full receiver.
+
+## The decoder
+
+sruti's own CW decoder turns the channel's audio into characters (prototype: `poc/receiver/cw_decode.py`,
+v0.1; product: v1.2):
+
+1. **Find the tone.** Score every frequency in 300–1000 Hz by its loud moments — the 90th percentile of
+   its power over short frames — because keyed CW is intermittent. A tone counts only if it stands at
+   least 6 dB above the rest of the passband; an empty passband yields no text at all.
+2. **Follow its envelope.** Mix the tone down to 0 Hz, smooth over 12 ms and take the magnitude every
+   5 ms, in dB.
+3. **Key on an adaptive threshold.** Over a 4 s window, the threshold sits midway between the noise floor
+   (25th percentile) and the signal peak (97th percentile), with ±1 dB of hysteresis. Where peak over floor
+   is under 14 dB there is no signal — noise alone spreads about 11 dB.
+4. **Measure marks and gaps.** Run lengths of key-down and key-up, with glitches under 10 ms folded into
+   their neighbours.
+5. **Adapt to the speed.** The dot length is the lower of two clusters of mark lengths (dashes are about
+   three dots), re-estimated over the last 24 marks as the sending speed changes; speed in WPM = 1.2 / dot
+   in seconds, within 5–50 WPM.
+6. **Read the Morse.** A mark under two dots is a dot, else a dash; a gap of two dots ends a character, of
+   five a word. Codes map to characters through the Morse table; prosigns sent together come out as
+   `<AR>`, `<SK>`, `<KN>`, `<BT>`; an unknown code is `[err]`, never a guess.
+
+It emits characters with timestamps and its status — tone, speed, signal over noise — as events; the
+characters feed the segmenter exactly as before. The prototype's self-test decodes synthetic CW with known
+text at 14–28 WPM down to 6 dB SNR, and an empty passband to nothing.
 
 ## The four sections
 
@@ -185,14 +206,14 @@ The display contract of the app's window:
 
 | # | Section | Content | Source | When it updates |
 |---|---|---|---|---|
-| 1 | **Original text** | the decoded characters, as sent | the receiver's decoder (WebSDR) | live, character by character |
+| 1 | **Original text** | the decoded characters, as sent | sruti's decoder, from the receiver's audio | live, character by character |
 | 2 | **Word by word** | each token of the piece → its expansion and meaning | piece explainer `gloss` (Gemini 3.8 Flash) | when a piece closes |
 | 3 | **Message** | what the operator actually said, as a natural message — never a word-for-word echo | piece explainer `message` (Gemini 3.8 Flash) | together with section 2 |
 | 4 | **What is going on** | who talks to whom, what kind of exchange, the story so far | session explainer (Claude Opus 5.5) | **only when the user presses Explain** |
 
 The business logic, section by section:
 
-**Section 1 — Original text.** Streams live, character by character, exactly as `cw_chars` arrives:
+**Section 1 — Original text.** Streams live, character by character, exactly as the decoder emits them:
 prosigns as strings, unknown codes as the decoder's `[err]`, nothing cleaned up or guessed. Lulls (a piece
 closed by silence, an `SK`) are visible as spacing, not hidden. This section never waits for a model and
 never fails: whatever happens to the explainers, the raw text is already on screen and already in the
@@ -305,31 +326,33 @@ prefix for prompt caching across presses.
 
 ## Configuration and the config panel
 
-- **The config file** (`sruti.toml`): receiver `host:port`, frequency, `cw_pboff` and the decoder
-  parameters (training, threshold mode and value, word-space correction), the client identity (`sruti`),
+- **The config file** (`sruti.toml`): receiver `host:port`, frequency, the decoder parameters (tone:
+  automatic or fixed Hz; speed: automatic or fixed WPM; the threshold contrast), the client identity (`sruti`),
   the output languages (`language.piece`, `language.session`), the segmenter thresholds, the model names
   and budgets. **`.env` holds the two API keys** — `GEMINI_API_KEY` for the piece tier and
   `ANTHROPIC_API_KEY` for the session tier; no key ever lives in `sruti.toml` or in code.
 - **The config panel** (a side panel of the app) edits the connection settings and shows the
-  **capture inspector**: the live raw extension messages exactly as they arrive from the receiver's API
-  (`cw_chars`, `cw_wpm`, `cw_train`, and anything unrecognized), next to how sruti parsed each one — so it
-  is verifiable what has to be captured from the API and how, before and while listening. Changes are
-  saved to the config file and applied on reconnect.
+  **capture inspector**: the live raw messages exactly as they arrive from the receiver (the `MSG` status
+  lines, the audio frames' signal level, and anything unrecognized) next to how sruti parsed each one, and
+  the decoder's status (tone, speed, signal over noise) — so it is verifiable what is captured and how,
+  before and while listening. Changes are saved to the config file and applied on reconnect.
 
 ## Hosts
 
 - **The Mac** (M1 Pro, 32 GB, managed): runs sruti from the repo with `uv`; both models run in the cloud.
   Constraints: no SDR software, inbound connections destroyed by endpoint filtering — which is why nothing
-  in sruti listens on any port — outbound HTTPS and WebSocket work.
+  in sruti listens on any port — outbound HTTPS and WebSocket work, and a corporate web filter blocks
+  dynamic-DNS hosts (§The receiver).
 - **`ich-picobox`** (Ubuntu 22.04, x86-64, 4 cores, 15 GB, no GPU, on the LAN): not used in v1. A possible
   later home for the receiver link or own SDR hardware.
 
 ## Testing
 
-- **Unit** — segmenter rules, `cw_chars` decoding, glossary rendering, prompt assembly, output-schema
+- **Unit** — the decoder on synthetic CW (speeds, noise, fading, an empty passband), audio frame
+  unpacking, segmenter rules, glossary rendering, prompt assembly, output-schema
   validation, session-store round-trip and replay, event serialization for the bridge.
-- **Fake receiver** — replays recorded extension messages from session files, so the whole pipeline runs
-  without a network.
+- **Fake receiver** — replays the v0.1 recordings (WAV audio + raw capture), so the whole pipeline,
+  decoder included, runs without a network.
 - **The app, without a window** — the bridge object is driven directly over the fake receiver, with a
   fake window that records every `evaluate_js` call: commands in, events out, in order. No GUI in CI.
 - **The page** (opt-in) — rendered in a headless browser from a recorded event snapshot baked into it,

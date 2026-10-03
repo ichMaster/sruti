@@ -27,7 +27,7 @@ regeneration runs**. Never reset them.
 
 1. Normalize the argument to `vA.B` and check it exists as a `### vA.B` heading in
    [specification/ROADMAP.md](../../../specification/ROADMAP.md). For anything else, name it and ask.
-   (v2 and v3 are not phased in the ROADMAP yet; they must be broken into `### vA.B` phases there before
+   (v2 is not phased in the ROADMAP yet; it must be broken into `### vA.B` phases there before
    issues can be generated.)
 2. Read ROADMAP.md §`vA.B`: the phase's **Goal**, description, **Tasks**, **DoD** (including which items are
    **Manual (owner)** — anything that needs a live receiver, a real model run or a quality judgment) and
@@ -64,7 +64,7 @@ regeneration runs**. Never reset them.
 Ground the phase in what was actually built and fixed, not only in what the specification describes. Review
 fixes and hardening in earlier phases may have moved the code away from the docs.
 
-1. Read the **real current code** this phase builds on: the Python package (receiver, segmenter, glossary,
+1. Read the **real current code** this phase builds on: the Python package (receiver, decoder, segmenter, glossary,
    explain, store, ui modules), `tests/`, `pyproject.toml`, `.env.example` and the glossary data files. Note
    the actual module and function names, signatures, config keys and env var names.
 2. Read the earlier phases' `specification/implementation/*-execution-report.md` and `*code-review*.md`,
@@ -87,8 +87,9 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   - **M:** a feature across a few files.
   - **L:** a new component or a contract change.
 - **Area**, one of:
-  - `receiver`: the KiwiSDR link (audio channel, CW_decoder extension, raw-message events, reconnect,
+  - `receiver`: the KiwiSDR link (one CW audio channel, audio and raw-message events, reconnect,
     busy/time-limit states).
+  - `decoder`: sruti's own CW decoder, audio → characters (pure, tested on synthesized Morse).
   - `segmenter`: the pure characters → pieces logic (sessions are manual, owned by the core/store).
   - `store`: the append-only JSONL session store — saving, listing, replay, the manual session switch.
   - `glossary`: the versioned data files and their rendering into prompts.
@@ -101,9 +102,10 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   - `docs`: the `specification/` files, README.md, CLAUDE.md.
   - `ops`: steps the owner performs — live receiver sessions, recordings, opt-in model evals.
 - **Order by dependency.** The first issue is usually the gate that everything builds on. In v1.1 that is
-  the project skeleton plus configuration loading; in v1.2 it is the pure segmenter module.
+  the project skeleton plus configuration loading; in v1.2 the decoder's pure stages; in v1.3 the pure
+  segmenter module.
 - **Tests in every code issue.** Keep decision logic pure so it can be unit-tested with plain data: the
-  piece cut rules, `cw_chars` decoding, prompt assembly, output-schema validation, the Explain trigger
+  decoder's stages, the piece cut rules, prompt assembly, output-schema validation, the Explain trigger
   handling, the cost accounting, event serialization for the bridge. The Gemini and Claude APIs are
   mocked, the fake receiver replays recordings, the app's bridge is driven with a fake window, the clock
   is injected, and no test touches the network.
@@ -117,8 +119,8 @@ receiver spike) may be a single issue. Don't pad. Each issue is a coherent, inde
   - Mark which checks Claude can run offline from the repo (fixtures, replays).
   - Name any repo artifact the issue produces (e.g. a recorded session under `specification/examples/` or
     the fixtures directory).
-- **Stay within the phase.** No piece explainer before v1.3, no app window before v1.4, no session
-  explainer before v1.5, nothing from MISSION.md's non-goals (no transmitting, no digital modes, no web
+- **Stay within the phase.** No decoder before v1.2, no piece explainer before v1.4, no app window
+  before v1.5, no session explainer before v1.6, nothing from MISSION.md's non-goals (no transmitting, no digital modes, no web
   server, nothing reachable from the LAN or the internet).
 
 ### Step 2: Write the issues file

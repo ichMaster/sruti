@@ -37,8 +37,8 @@ UI-agnostic.
 switched manually — switching the session *is* retuning — and every session is saved and can be reopened
 and replayed.
 
-The receiver is someone else's: a public **KiwiSDR** reached over the internet. The text comes first from
-the receiver's own CW decoder; decoding the audio on the Mac is a later version.
+The receiver is someone else's: a public **KiwiSDR** reached over the internet. sruti takes its audio
+and decodes the CW into text on the Mac, with its own decoder.
 
 ## For whom
 
@@ -53,8 +53,8 @@ installed and nothing can accept an inbound connection. One user, one window, li
   never needs one — nothing in sruti listens on any port.
 - **No radio software, no hardware.** SDR software is blocked on this Mac and no SDR is attached; the
   radio is a public KiwiSDR.
-- **Decode at the receiver first.** The KiwiSDR's own CW decoder produces the text. Decoding on the Mac is
-  a later version.
+- **Decode on the Mac.** The receiver supplies only audio; sruti's own CW decoder turns it into text.
+  Receiver-side decoders are missing, disabled or unreachable too often to depend on.
 - **Two models, two jobs.** A fast model explains each piece within seconds; a strong model explains the
   whole session **only on the user's push**. Without either key, or without a network to reach them,
   sruti still listens, records and shows the original text.
@@ -84,8 +84,8 @@ installed and nothing can accept an inbound connection. One user, one window, li
 - **CW** — Morse code telegraphy ("continuous wave").
 - **WebSDR / KiwiSDR** — a radio receiver shared over the web. sruti uses KiwiSDR: about 870 public
   receivers, an open WebSocket protocol and a Python client. websdr.org receivers are browser-only.
-- **Receiver link** — sruti's connection to one KiwiSDR: an audio channel plus the receiver's CW decoder
-  extension.
+- **Receiver link** — sruti's connection to one KiwiSDR: one CW audio channel.
+- **Decoder** — sruti's own CW decoder, on the Mac: the receiver's audio in, characters out.
 - **Piece** — a run of decoded text cut at a pause or an end-of-turn prosign; the unit the fast model
   explains. The piece tier's buffer.
 - **Session** — the pieces heard on one receiver and one frequency between tune and retune. Switched

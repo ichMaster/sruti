@@ -48,7 +48,7 @@ gh label create "v1.1::phase"  --color "0E8A16" --description "Phase v1.1 — Pr
 gh label create "v1.1::size:S" --color "28A745" --description "Small — one function or file" 2>/dev/null || true
 gh label create "v1.1::size:M" --color "FFC107" --description "Medium — a feature across a few files" 2>/dev/null || true
 gh label create "v1.1::size:L" --color "DC3545" --description "Large — a new component or a contract change" 2>/dev/null || true
-# one per area used in this phase: receiver, segmenter, glossary, explain, ui, config, tests, docs, ops
+# one per area used in this phase: receiver, decoder, segmenter, store, glossary, explain, ui, config, tests, docs, ops
 gh label create "v1.1::area:receiver" --color "1D76DB" 2>/dev/null || true
 gh label create "v1.1::area:ops"      --color "D93F0B" --description "Owner performs: live receivers, recordings, model evals" 2>/dev/null || true
 ```
@@ -83,7 +83,7 @@ After each one, show the result and move straight on; don't wait for confirmatio
    **ID:** {SRUTI-###}
    **Size:** {S/M/L}
    **Phase:** {vA.B}
-   **Area:** {receiver/segmenter/glossary/explain/ui/config/tests/docs/ops}
+   **Area:** {receiver/decoder/segmenter/store/glossary/explain/ui/config/tests/docs/ops}
    ```
 
 3. Create it:

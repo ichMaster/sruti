@@ -101,7 +101,7 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
 
   <figure>
     <div class="scroll">
-    <svg viewBox="0 0 1240 770" role="img" aria-label="sruti network architecture: HF signals reach a public KiwiSDR that decodes CW on site; the Mac opens an outbound WebSocket to it on port 8073, calls the Gemini API on 443 for every closed piece and the Claude API on 443 only when Explain is pressed; the app's window talks to the core through the pywebview bridge, and nothing listens on any port. All inbound connections to the Mac are destroyed, and there is no transmit path back to the air.">
+    <svg viewBox="0 0 1240 770" role="img" aria-label="sruti network architecture: HF signals reach a public KiwiSDR; the Mac opens an outbound WebSocket to it on port 8073, takes one channel of CW audio and decodes it with its own decoder, calls the Gemini API on 443 for every closed piece and the Claude API on 443 only when Explain is pressed; the app's window talks to the core through the pywebview bridge, and nothing listens on any port. All inbound connections to the Mac are destroyed, and there is no transmit path back to the air.">
       <defs>
         <marker id="m-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
@@ -166,9 +166,9 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
       <text class="bs" x="216" y="222">12 kHz mono 16-bit audio</text>
       <line class="ctl" x1="306" y1="230" x2="306" y2="244" marker-end="url(#m-ink)"/>
       <rect class="box" x="206" y="248" width="200" height="52" rx="6"/>
-      <text class="bt" x="216" y="266">CW_decoder extension</text>
-      <text class="bs" x="216" y="281">Goertzel · decodes at the receiver</text>
-      <text class="bs" x="216" y="294">unknown code → [err]</text>
+      <text class="bt" x="216" y="266">CW audio channel</text>
+      <text class="bs" x="216" y="281">CW mode · 300–700 Hz passband</text>
+      <text class="bs" x="216" y="294">the signal on a ~500 Hz tone</text>
       <text class="bs" x="198" y="348">guest rules: one slot · named “sruti”</text>
       <text class="bs" x="198" y="362">back off when busy · respect time limit</text>
 
@@ -195,15 +195,15 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
       <text class="bt" x="488" y="506">kiwisdr.com/public</text>
       <text class="bs" x="488" y="521">receiver directory</text>
       <rect class="badge" x="488" y="527" width="78" height="14" rx="7"/>
-      <text class="pb" x="527" y="538" text-anchor="middle" style="font-size:9px">https :443</text>
-      <text class="bs" x="586" y="564" text-anchor="middle">manual pick in v0–v1 · automated ≥ v3</text>
+      <text class="pb" x="527" y="538" text-anchor="middle" style="font-size:9px">http :80</text>
+      <text class="bs" x="586" y="564" text-anchor="middle">manual pick in v0–v1 · automated ≥ v2</text>
 
       <!-- ===== link A: websocket pair ===== -->
       <text class="ll" x="588" y="135" text-anchor="middle">WebSocket — opened from the Mac, one guest slot</text>
       <line class="ctl" x1="790" y1="176" x2="432" y2="176" marker-end="url(#m-ink)"/>
-      <text class="ll" x="588" y="170" text-anchor="middle">SET tuning + decoder params — nothing else</text>
+      <text class="ll" x="588" y="170" text-anchor="middle">SET tuning + keepalive — nothing else</text>
       <line class="dat" x1="432" y1="198" x2="790" y2="198" marker-end="url(#m-acc)"/>
-      <text class="lla" x="588" y="216" text-anchor="middle">SND audio + EXT cw_chars · cw_wpm · cw_train</text>
+      <text class="lla" x="588" y="216" text-anchor="middle">SND audio, 12 kHz PCM + S-meter · MSG status</text>
 
       <!-- ===== link C: config → directory ===== -->
       <polyline class="ctl" points="782,421 764,421 764,515 702,515" marker-end="url(#m-ink)"/>
@@ -212,10 +212,15 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
       <rect class="box" x="766" y="132" width="280" height="368" rx="8"/>
       <text class="bt" x="780" y="152" style="font-size:10.5px; letter-spacing:.08em">SRUTI — ONE PROCESS</text>
 
-      <rect class="box" x="782" y="166" width="248" height="36" rx="5"/>
+      <rect class="box" x="782" y="166" width="118" height="36" rx="5"/>
       <text class="bt" x="792" y="182">receiver link</text>
-      <text class="bs" x="792" y="196">own WebSocket client · reconnect w/ backoff</text>
-      <line class="ctl" x1="906" y1="202" x2="906" y2="212" marker-end="url(#m-ink)"/>
+      <text class="bs" x="792" y="196">own client · audio</text>
+      <line class="ctl" x1="900" y1="184" x2="910" y2="184" marker-end="url(#m-ink)"/>
+
+      <rect class="box" x="912" y="166" width="118" height="36" rx="5" style="stroke:var(--accent)"/>
+      <text class="bt" x="922" y="182">CW decoder</text>
+      <text class="bs" x="922" y="196">audio → characters</text>
+      <line class="ctl" x1="971" y1="202" x2="971" y2="212" marker-end="url(#m-ink)"/>
 
       <rect class="box" x="782" y="214" width="248" height="36" rx="5"/>
       <text class="bt" x="792" y="230">segmenter</text>
@@ -289,12 +294,12 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
     </svg>
     </div>
     <div class="legend">
-      <span><i class="sw acc"></i> decoded text (the data path)</span>
+      <span><i class="sw acc"></i> the data path — audio in, decoded on the Mac</span>
       <span><i class="sw"></i> commands / requests</span>
       <span><i class="sw dng"></i> blocked by design</span>
     </div>
-    <figcaption>Decoded CW text flows one way — air → receiver's decoder → WebSocket → segmenter → store →
-    explainers → the four sections. The Mac originates every connection and listens on none: the window talks to
+    <figcaption>The signal flows one way — air → the receiver's audio → WebSocket → sruti's CW decoder →
+    segmenter → store → explainers → the four sections. The Mac originates every connection and listens on none: the window talks to
     the core through the pywebview bridge, not over a socket.</figcaption>
   </figure>
 
@@ -307,8 +312,8 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
         <td><b>sruti → public KiwiSDR</b></td>
         <td><span class="dir out">outbound</span></td>
         <td class="mono">ws://&lt;receiver&gt;:8073<br>(the receiver's public port; varies)</td>
-        <td>in: SND audio + EXT <span class="mono">cw_chars / cw_wpm / cw_train</span>; out: <span class="mono">SET</span> tuning and decoder parameters — nothing else</td>
-        <td>one slot, identified <span class="mono">sruti</span>; backs off when busy; respects the time limit</td>
+        <td>in: SND audio (12 kHz PCM, S-meter) + <span class="mono">MSG</span> status; out: <span class="mono">SET</span> tuning and keepalive — nothing else</td>
+        <td>one slot, identified <span class="mono">sruti</span>; backs off when busy (<span class="mono">badp=1</span>); respects the time limit; ordinary domains only — dynamic-DNS hosts are blocked by the corporate filter</td>
       </tr>
       <tr>
         <td><b>sruti → generativelanguage.googleapis.com</b></td>
@@ -327,9 +332,9 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
       <tr>
         <td><b>sruti → kiwisdr.com/public</b></td>
         <td><span class="dir out">outbound</span></td>
-        <td class="mono">https :443</td>
-        <td>the public receiver directory</td>
-        <td>manual in v0–v1; automated no earlier than v3</td>
+        <td class="mono">http :80</td>
+        <td>the public receiver directory (plain HTTP — nothing on :443)</td>
+        <td>manual in v0–v1; automated no earlier than v2</td>
       </tr>
       <tr>
         <td><b>the window ⇄ the core</b></td>
@@ -365,14 +370,15 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
     </div>
     <div class="card">
       <h3>The receiver's site <span class="mono">· ws :8073</span></h3>
-      <p>A public KiwiSDR someone else owns. Decoding happens <b>here</b>, in its CW_decoder extension — text, not
-      audio, is what sruti consumes in v1 (audio decoding on the Mac is v2). sruti is a guest: one slot, a clear
-      name, polite backoff.</p>
+      <p>A public KiwiSDR someone else owns. It supplies <b>only audio</b>: one CW channel, the signal on a tone
+      inside the passband. Its own decoder extension is missing on many receivers, so decoding happens on the
+      Mac. sruti is a guest: one slot, a clear name, polite backoff.</p>
     </div>
     <div class="card">
-      <h3>The internet <span class="mono">· :443, :8073</span></h3>
+      <h3>The internet <span class="mono">· :443, :8073, :80</span></h3>
       <p>Crossed only by connections the Mac opens: the receiver WebSocket, the Gemini API call for each piece, the
-      Claude API call (button-gated), and the receiver directory. Nothing out there can initiate a connection in.</p>
+      Claude API call (button-gated), and the receiver directory. Nothing out there can initiate a connection in.
+      The corporate web filter blocks dynamic-DNS receivers.</p>
     </div>
     <div class="card">
       <h3>The managed Mac <span class="mono">· inbound ✕</span></h3>
@@ -387,15 +393,15 @@ svg .thin{stroke:var(--line); stroke-width:1.4; fill:none;}
     </div>
     <div class="card">
       <h3>In process <span class="mono">· events</span></h3>
-      <p>Inside sruti the core (receiver link → segmenter → store → explainers) talks to the interface only through
+      <p>Inside sruti the core (receiver link → decoder → segmenter → store → explainers) talks to the interface only through
       the event stream and the core commands. The window is a shell over the core, which
       <b>never imports interface code</b>.</p>
     </div>
   </div>
 
-  <p class="foot">Sources: <code>specification/ARCHITECTURE.md</code> — §Core and interfaces, §The receiver,
+  <p class="foot">Sources: <code>specification/ARCHITECTURE.md</code> — §Core and interfaces, §The receiver, §The decoder,
   §The four sections, §The two tiers, §Configuration and the config panel, §Hosts; principles from
-  <code>specification/MISSION.md</code>. The KiwiSDR protocol table in ARCHITECTURE lists the exact
-  <code>SET</code> / <code>cw_*</code> messages allowed through the :8073 WebSocket; <code>:8073</code> is the
+  <code>specification/MISSION.md</code>. The receiver message table in ARCHITECTURE lists the exact
+  <code>SET</code> messages allowed through the :8073 WebSocket; <code>:8073</code> is the
   common default — each directory entry names its real port.</p>
 </div>

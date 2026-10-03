@@ -43,8 +43,8 @@ report says nothing was pushed.
 ```
 
 A **selector** is a phase (`v0.2` or `0.2`), a version (`v1` = all its phases), or a range (`v0-v1`,
-`v0.2-v1.3`). Omit it to ship every phase that has an issues file. (v2 and v3 are not phased in the
-ROADMAP yet; a selector naming them must stop and ask.)
+`v0.2-v1.3`). Omit it to ship every phase that has an issues file. (v2 is not phased in the
+ROADMAP yet; a selector naming it must stop and ask.)
 
 - `/ship-solution`: ship every phase with a `specification/implementation/vA.B-issues.md`.
 - `/ship-solution v1.1`: phase v1.1 and any unreleased earlier phases.

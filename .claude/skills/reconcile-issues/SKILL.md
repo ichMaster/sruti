@@ -27,7 +27,7 @@ Run it right before `/execute-issues-file`.
 
 1. **The issues file:** resolve the target to `specification/implementation/vA.B-issues.md` and read all of it:
    the summary table, the dependency tree and every `### SRUTI-###` section.
-2. **The code:** read the **real current code** the issues touch: the Python package (receiver, segmenter,
+2. **The code:** read the **real current code** the issues touch: the Python package (receiver, decoder, segmenter,
    glossary, explain, store, ui modules), `tests/`, `pyproject.toml`, `.env.example` and the glossary data
    files. Note the actual module and function names, signatures, config keys, env var names and
    dependencies.
@@ -43,13 +43,13 @@ Run it right before `/execute-issues-file`.
 
 Compare each issue's **assumptions** with reality:
 
-- **Paths:** wrong or renamed files and modules (e.g. an issue naming `sruti/decoder.py` when the code has
-  `sruti/receiver.py`).
+- **Paths:** wrong or renamed files and modules (e.g. an issue naming `sruti/pieces.py` when the code has
+  `sruti/segmenter.py`).
 - **Names and signatures** that changed: functions, config keys (e.g. a segmenter threshold read from the
   config file vs `.env`), the session-log record fields, the Gemini request shape, the Claude API call
   shape, CLI flags.
 - **Contracts** that a landed fix moved past the spec: the piece cut rules, the record shapes, the local
-  explainer's JSON schema, the cloud scheduling rules, the `cw_pboff` handling.
+  explainer's JSON schema, the decoder's thresholds, the receiver's tuning.
 - **Work already done:** the deliverable was already shipped by an earlier fix or phase, or an owner step
   (a recording, a model decision) was already performed.
 - **The code is ground truth** where it disagrees with the issue text or a stale spec.
@@ -61,7 +61,7 @@ For each issue that drifted, edit its section in `vA.B-issues.md`:
 1. **Fix the details** (Description, What needs to be done, Acceptance criteria) so they match the real
    implementation. Keep the **SRUTI id and the intent**; correct only what drifted.
 2. **Add a change-mark** as a blockquote directly under the issue heading:
-   > **⟳ Reconciled (<today>):** originally referenced `sruti/decoder.py` and a `pause_s` TOML key; corrected
+   > **⟳ Reconciled (<today>):** originally referenced `sruti/pieces.py` and a `pause_s` TOML key; corrected
    > to the shipped `sruti/segmenter.py` reading `PIECE_PAUSE_S` from the config. Reason: matches the real
    > implementation.
 3. **Moot issues** (already delivered) stay in the file with a clear mark:

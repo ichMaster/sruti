@@ -12,40 +12,41 @@ Read these before planning work; they are the project's contract with itself.
 - **[specification/ARCHITECTURE.md](specification/ARCHITECTURE.md)** — the core and the desktop app
   (pywebview window, JS bridge, no port), the KiwiSDR protocol, the four-section display contract, pieces
   and sessions, the two model tiers, the config panel, the hosts, and testing.
-- **[specification/ROADMAP.md](specification/ROADMAP.md)** — versions v0 (groundwork) through v3, each
+- **[specification/ROADMAP.md](specification/ROADMAP.md)** — versions v0 (groundwork) through v2, each
   phase `vA.B` with Goal, Tasks, DoD and Tests. Build phases strictly in order and check each against its
-  DoD before moving on. v2 and v3 are not broken into phases yet.
+  DoD before moving on. v2 is not broken into phases yet.
 - **[specification/examples/](specification/examples/)** — golden examples; example 001 is the quality bar
   for the explainers.
 
 ## Project status
 
-A private listening agent for one user: it tunes into a public KiwiSDR, reads the decoded Morse (CW) text,
-and shows four sections — the original text (live), a word-by-word gloss and an English message
+A private listening agent for one user: it tunes into a public KiwiSDR, decodes the Morse (CW) in its
+audio on the Mac with its own decoder, and shows four sections — the original text (live), a word-by-word gloss and an English message
 translation (Gemini 3.8 Flash, per buffered piece), and a Ukrainian explanation of what is going on
 (Claude Opus 5.5, **only when the user presses Explain**). Sessions are switched manually (switching =
 retuning), always saved, and replayable. The interface is a desktop window (pywebview); nothing listens.
-So far the repo holds only the specification.
+So far the repo holds the specification and the PoCs (`poc/`): the v0.1 receiver spike and prototype
+decoder, the model comparison, and the desktop-window prototype.
 
 Latest release: none yet.
 
 | Version | Phases | What it delivers |
 |---|---|---|
-| `v0` Groundwork | v0.1 text from the receiver · v0.2 prove the piece model | spikes, recordings, golden examples, the prompt and glossary form |
-| `v1` The listening agent (desktop app) | v1.1 skeleton + receiver link · v1.2 pieces + session store · v1.3 piece explainer · v1.4 the desktop app · v1.5 session explainer | first real code in v1.1 |
-| `v2` Decoding on the Mac | (not yet phased) | a local CW decoder as a second text source |
-| `v3` Finding traffic | (open) | the agent chooses where to listen |
+| `v0` Groundwork | v0.1 text from the receiver, decoded on the Mac · v0.2 prove the piece model | the receiver spike, a prototype decoder, recordings, golden examples, the prompt and glossary form |
+| `v1` The listening agent (desktop app) | v1.1 skeleton + receiver link · v1.2 the CW decoder · v1.3 pieces + session store · v1.4 piece explainer · v1.5 the desktop app · v1.6 session explainer | first real code in v1.1 |
+| `v2` Finding traffic | (open) | the agent chooses where to listen |
 
 ## Layout and commands
 
-The components (ARCHITECTURE.md §Components): `receiver` (the KiwiSDR link — sruti's own WebSocket client — also emitting
-the raw extension messages), `segmenter` (pure characters → pieces), `store` (append-only JSONL sessions
+The components (ARCHITECTURE.md §Components): `receiver` (the KiwiSDR link — sruti's own WebSocket client for one audio
+channel — also emitting the raw messages), `decoder` (sruti's own CW decoder: audio → characters),
+`segmenter` (pure characters → pieces), `store` (append-only JSONL sessions
 under `var/sessions/`, listing and replay), `glossary/` (versioned data), `explain/piece` (Gemini 3.8
 Flash, gloss + message per piece), `explain/session` (Claude Opus 5.5, on the Explain action), `ui/app`
 (the pywebview window, its page and the bridge). The core never imports the app's code.
 
-- Headless (from v1.1): `uv run sruti listen --receiver <host:port> --freq <kHz>`
-- The app (from v1.4): `uv run sruti app` — the window with the four sections, the config panel with the
+- Headless (from v1.1, characters from v1.2): `uv run sruti listen --receiver <host:port> --freq <kHz>`
+- The app (from v1.5): `uv run sruti app` — the window with the four sections, the config panel with the
   capture inspector, the session switcher. The working prototype is `poc/desktop/`.
 - Configuration lives in `sruti.toml`; recordings and session files are local data (`var/`, gitignored);
   curated recordings become fixtures and golden examples under `specification/examples/`.
@@ -80,7 +81,7 @@ reaches a receiver or a paid API.
 The full mechanisms live in ARCHITECTURE.md; these are the invariants most often broken by accident:
 
 - **Listen only.** No code path transmits, keys or talks back on the air; nothing is sent to the receiver
-  beyond the documented tuning and decoder `SET` messages.
+  beyond the documented tuning messages.
 - **A polite guest.** One connection per run, identified as `sruti`; back off from a busy receiver,
   respect its time limits, disconnect when idle.
 - **Never invent.** Unreadable text is `[...]`, not guessed; a call sign is never "corrected" into a
@@ -104,7 +105,7 @@ The full mechanisms live in ARCHITECTURE.md; these are the invariants most often
   through the JS bridge — no HTTP server, no port, not even on loopback. A test pins it.
 - **The glossary is data.** Q-codes, prosigns and abbreviations live in `glossary/` and are rendered into
   the prompts — never hardcoded, never left to model memory.
-- **Keep decisions pure**: the piece cut rules, `cw_chars` decoding, prompt assembly, schema validation,
+- **Keep decisions pure**: the decoder's stages, the piece cut rules, prompt assembly, schema validation,
   the Explain trigger handling and the cost accounting are functions over plain data with an injected
   clock.
 - **Everything is logged to the session store** — every character, piece and explanation with timestamps —
@@ -129,7 +130,9 @@ Changing any of these updates ARCHITECTURE.md and the test that pins it, in the 
   `rename-session`, `set-config`);
 - the **CLI**: `sruti listen --receiver <host:port> --freq <kHz>`, `sruti app`;
 - the **session store layout** (`var/sessions/<started>-<receiver>-<freq>.jsonl`, append-only);
-- the **KiwiSDR extension messages** sruti sends and reads (the table in ARCHITECTURE.md §The receiver);
+- the **receiver messages** sruti sends and reads, and how it connects (ARCHITECTURE.md §The receiver);
+- the **decoder's output**: characters with timestamps, prosigns as strings, unknown codes as `[err]`
+  (§The decoder);
 - the **two-tier table** (when each tier runs, its inputs, languages, budgets and fallbacks).
 
 ## Delivery workflow (skills)
