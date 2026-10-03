@@ -148,7 +148,7 @@ def make_streams(args, capture: Capture, stop: threading.Event):
         netcat=False, sound=False, resample=0, S_meter=-1, sdt=0, tstamp=False, station=None,
         filename="", dir=None, test_mode=False, rev_bin=False, nb=False, nb_test=False,
         multiple_connections=False, camp_allow_1ch=False, bad_cmd=False, ADC_OV=False,
-        modulation="cw", lp_cut=CW_PASSBAND[0], hp_cut=CW_PASSBAND[1], user=IDENTITY,
+        modulation="cw", lp_cut=args.passband_hz[0], hp_cut=args.passband_hz[1], user=IDENTITY,
     )
     channel = {}  # the SND channel number, when the receiver announces it
 
@@ -218,7 +218,7 @@ def make_streams(args, capture: Capture, stop: threading.Event):
                 return
             self._tuned = True
             self.set_name(IDENTITY)
-            self.set_mod("cw", CW_PASSBAND[0], CW_PASSBAND[1], args.freq)
+            self.set_mod("cw", args.passband_hz[0], args.passband_hz[1], args.freq)
             self.set_agc(on=True)
             if args.audio:
                 self._set_snd_comp(False)  # plain 16-bit samples for the recording
@@ -340,7 +340,7 @@ def listen(args) -> int:
         if len(x) == 0:
             print("no audio was recorded", file=sys.stderr)
             return 1
-        r = cw_decode.decode_audio(x, fs)
+        r = cw_decode.decode_audio(x, fs, args.passband_hz)
         print("--- decoded on the Mac (poc/receiver/cw_decode.py) ---", file=sys.stderr)
         print(r["text"] or "(no CW found)")
         print(f"[{r['seconds']:.0f} s · tone {r['tone_hz']:.0f} Hz, {r['prominence_db']:.1f} dB above the passband"
@@ -351,8 +351,11 @@ def listen(args) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--receiver", help="host:port of a public KiwiSDR")
-    ap.add_argument("--freq", type=float, help="frequency in kHz, used as the passband centre")
-    ap.add_argument("--pboff", type=int, default=500, help="tone offset for the decoder, Hz (default 500)")
+    ap.add_argument("--freq", type=float, help="the signal's frequency in kHz; it lands on a ~500 Hz tone")
+    ap.add_argument("--passband", default=f"{CW_PASSBAND[0]}-{CW_PASSBAND[1]}",
+                    help="audio passband in Hz (default %(default)s); wider, e.g. 200-2800, tolerates a frequency"
+                         " read off the waterfall")
+    ap.add_argument("--pboff", type=int, default=500, help="tone offset for --kiwi-decoder, Hz (default 500)")
     ap.add_argument("--out", help="write the raw capture to this JSONL file")
     ap.add_argument("--replay", help="print the text of a saved capture and exit (offline)")
     ap.add_argument("--audio", help="record the channel audio to this WAV file and decode it on the Mac")
@@ -363,6 +366,7 @@ def main() -> int:
     ap.add_argument("--browser-path", action="store_true",
                     help="connect like the browser page: the /VER timestamp and the /ws/no_wf/ path")
     args = ap.parse_args()
+    args.passband_hz = tuple(int(v) for v in args.passband.split("-"))
     if args.replay:
         return replay(pathlib.Path(args.replay))
     if not args.receiver or args.freq is None:

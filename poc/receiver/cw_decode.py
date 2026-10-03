@@ -51,7 +51,7 @@ def load_wav(path: str) -> tuple[np.ndarray, float]:
     return x, fs
 
 
-def find_tone(x: np.ndarray, fs: float) -> tuple[float, float]:
+def find_tone(x: np.ndarray, fs: float, band_hz: tuple[float, float] = TONE_BAND) -> tuple[float, float]:
     """The CW tone and how far (dB) it stands above the rest of the passband.
 
     Keyed CW is intermittent, so each frequency is scored by its loud moments (the 90th percentile over
@@ -64,7 +64,11 @@ def find_tone(x: np.ndarray, fs: float) -> tuple[float, float]:
     power = np.abs(np.fft.rfft(frames * np.hanning(n), axis=1)) ** 2
     loud = np.percentile(power, 90, axis=0)
     freqs = np.fft.rfftfreq(n, 1 / fs)
-    band = (freqs >= TONE_BAND[0]) & (freqs <= TONE_BAND[1])
+    band = (freqs >= band_hz[0]) & (freqs <= band_hz[1])
+    # Only bins the receiver's filter lets through: the skirts outside its passband are near silent and
+    # would drag the median down until plain noise looked like a tone.
+    typical = np.median(power, axis=0)
+    band &= typical >= typical[band].max() / 100
     peak = int(np.argmax(loud[band]))
     prominence = 10 * np.log10(loud[band][peak] / np.median(loud[band]))
     return float(freqs[band][peak]), float(prominence)
@@ -182,10 +186,10 @@ def decode(segments: list[list], adapt_marks: int = 24) -> tuple[str, list[float
     return "".join(text).strip(), dots_used
 
 
-def decode_audio(x: np.ndarray, fs: float) -> dict:
+def decode_audio(x: np.ndarray, fs: float, band_hz: tuple[float, float] = TONE_BAND) -> dict:
     if len(x) < fs:  # under a second of audio: nothing to decode
         return {"text": "", "tone_hz": 0.0, "prominence_db": 0.0, "wpm": 0.0, "seconds": len(x) / fs}
-    tone, prominence = find_tone(x, fs)
+    tone, prominence = find_tone(x, fs, band_hz)
     if prominence < MIN_TONE_PROMINENCE_DB:
         return {"text": "", "tone_hz": tone, "prominence_db": prominence, "wpm": 0.0, "seconds": len(x) / fs}
     env = envelope_db(x, fs, tone)
@@ -232,11 +236,13 @@ def selftest() -> int:
         ("R R TNX FER RPT UR RST 5NN 5NN <BT> NAME LINO <KN>", 18, 8.0),
         ("TEST DE OH2B 73 <SK>", 28, 12.0),
         ("CAMBIO ANCHE IL RTX ET ACCENDO IC 7300 K", 14, 6.0),
-        ("", 20, 0.0),  # an empty passband: noise only, nothing may be decoded
+        ("", 20, 0.0, TONE_BAND),  # an empty passband: noise only, nothing may be decoded
+        ("", 20, 0.0, (200.0, 2800.0)),  # the same, searched wider than the receiver's filter
+        ("CQ CQ DE IZ4PHG IZ4PHG K", 22, 10.0, (200.0, 2800.0)),
     ]
     failed = 0
-    for text, wpm, snr in cases:
-        got = decode_audio(synthesize(text, wpm, snr_db=snr), 12000.0)
+    for text, wpm, snr, *band in cases:
+        got = decode_audio(synthesize(text, wpm, snr_db=snr), 12000.0, *band)
         ok = got["text"] == text
         failed += not ok
         print(f"{'ok ' if ok else 'BAD'} {wpm:>2} WPM, SNR {snr:4.1f} dB → {got['wpm']:4.1f} WPM, "
@@ -248,13 +254,16 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("wav", nargs="?", help="mono 16-bit WAV of the receiver audio")
     ap.add_argument("--selftest", action="store_true", help="decode synthetic CW with known text")
+    ap.add_argument("--band", default=f"{TONE_BAND[0]:.0f}-{TONE_BAND[1]:.0f}",
+                    help="audio band to search for the tone, Hz (default %(default)s)")
     args = ap.parse_args()
     if args.selftest:
         return selftest()
     if not args.wav:
         ap.error("give a WAV file or --selftest")
     x, fs = load_wav(args.wav)
-    r = decode_audio(x, fs)
+    lo, hi = (float(v) for v in args.band.split("-"))
+    r = decode_audio(x, fs, (lo, hi))
     print(r["text"] or "(no CW found)")
     print(f"\n[{r['seconds']:.0f} s · tone {r['tone_hz']:.0f} Hz, {r['prominence_db']:.1f} dB above the passband"
           f" · ~{r['wpm']:.0f} WPM]", file=sys.stderr)
