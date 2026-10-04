@@ -183,6 +183,11 @@ blobs (`load_cfg`, `load_dxcfg`, `load_dxcomm_cfg`) are reduced to their size (`
 once-a-second `SET keepalive` are left out. The audio goes beside it as a WAV file (mono, 16-bit, 12 kHz).
 The v0.1 recordings are this pair, and the fake receiver replays them.
 
+**A silent channel is a dead one.** A healthy channel sends ~23 audio frames a second. No data for
+`link.silence_s` (default 20 s) closes the connection and goes through the normal reconnect. Otherwise a
+connection lost without a close — the Mac sleeping, a network change, a NAT forgetting the mapping —
+would leave the link "listening" to nothing.
+
 **Being a guest.** One connection per run, identified as `sruti`. Public receivers limit slots and session
 time; the link reports both and backs off from a busy or full receiver.
 

@@ -120,11 +120,15 @@ class Link:
             while not self._stop.is_set():
                 receive = asyncio.ensure_future(transport.recv())
                 stopper = asyncio.ensure_future(self._stop.wait())
-                done, _ = await asyncio.wait({receive, stopper}, return_when=asyncio.FIRST_COMPLETED)
+                done, _ = await asyncio.wait({receive, stopper}, timeout=self.config.silence_s,
+                                             return_when=asyncio.FIRST_COMPLETED)
                 stopper.cancel()
                 if receive not in done:
                     receive.cancel()
-                    return True
+                    if stopper in done:
+                        return True
+                    # A connection lost without a close (sleep, network change) would otherwise hang here.
+                    raise TransportClosed(f"no data for {self.config.silence_s:g} s")
                 data = receive.result()
                 tag, body = protocol.split_frame(data)
                 if tag == "SND":

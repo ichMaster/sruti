@@ -124,6 +124,18 @@ def test_a_drop_reconnects_without_losing_or_repeating_audio():
     assert fake.connections == 2 and fake.max_open == 1
 
 
+def test_a_silent_connection_is_dropped_and_reconnected():
+    fake = cq_fake(script=[Behaviour(stall_after_frames=100), Behaviour()])
+    config = LinkConfig(reconnect_initial_s=2.0, reconnect_max_s=60.0, busy_retry_s=30.0, keepalive_s=3600.0,
+                        silence_s=0.05)
+    events, _, _ = run_link(fake, link_config=config)
+    assert states(events) == ["connecting", "listening", "reconnecting", "connecting", "listening", "ended"]
+    reconnecting = next(e for e in events if isinstance(e, LinkState) and e.state == "reconnecting")
+    assert "no data for 0.05 s" in reconnecting.detail and reconnecting.attempt == 1
+    _, wav_pcm = read_wav(RECORDINGS / "cq.wav")
+    assert audio(events) == wav_pcm
+
+
 def test_a_full_receiver_waits_politely():
     fake = cq_fake(script=[Behaviour(busy=True), Behaviour(busy=True), Behaviour()])
     events, sleeps, _ = run_link(fake)

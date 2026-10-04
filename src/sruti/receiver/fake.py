@@ -22,6 +22,7 @@ class Behaviour:
 
     busy: bool = False  # answer MSG badp=1 and close
     drop_after_frames: int | None = None  # close after this many audio frames
+    stall_after_frames: int | None = None  # go silent after this many frames, without closing
     extra: list[str] = field(default_factory=list)  # text messages sent right after the greeting
 
 
@@ -90,6 +91,9 @@ class FakeTransport:
         await asyncio.sleep(0)  # let the link's other tasks run, as a socket read would
         if self.closed:
             raise TransportClosed("closed by the link")
+        stall = self.behaviour.stall_after_frames
+        if stall is not None and self.frames_sent >= stall:
+            await asyncio.Event().wait()  # a dead connection: no data, no close, until the link gives up
         limit = self.behaviour.drop_after_frames
         if limit is not None and self.frames_sent >= limit:
             await self.close()

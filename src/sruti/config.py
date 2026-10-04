@@ -32,6 +32,7 @@ class LinkConfig:
     reconnect_max_s: float = 60.0
     busy_retry_s: float = 30.0
     keepalive_s: float = 1.0
+    silence_s: float = 20.0  # no data this long = a dead connection (a healthy channel sends ~23 frames/s)
 
 
 @dataclass(frozen=True)
@@ -135,6 +136,8 @@ def load_config(toml_path: pathlib.Path | None = None, env_path: pathlib.Path | 
     link = _section(LinkConfig, data.get("link", {}), "link")
     if not 0 < link.reconnect_initial_s <= link.reconnect_max_s:
         raise ConfigError("[link] needs 0 < reconnect_initial_s <= reconnect_max_s")
+    if link.silence_s <= 0:
+        raise ConfigError("[link] silence_s must be positive")
     env = parse_env(env_path.read_text(encoding="utf-8")) if env_path.exists() else {}
     secrets = Secrets(gemini=env.get("GEMINI_API_KEY", ""), anthropic=env.get("ANTHROPIC_API_KEY", ""))
     return Config(receiver=receiver, link=link, secrets=secrets)
