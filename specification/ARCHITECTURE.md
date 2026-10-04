@@ -200,19 +200,21 @@ v0.1; product: v1.2):
 4. **Measure marks and gaps.** Run lengths of key-down and key-up, with glitches under 10 ms folded into
    their neighbours.
 5. **Adapt to the speed.** The dot length is the lower of two clusters of mark lengths (dashes are about
-   three dots), re-estimated over the last 24 marks as the sending speed changes; speed in WPM = 1.2 / dot
-   in seconds, within 5–50 WPM. Noise spikes form a third, much shorter cluster: when the two clusters
+   three dots), re-estimated over the last 24 marks as the sending speed changes, within 5–50 WPM. Noise spikes form a third, much shorter cluster: when the two clusters
    are more than 4.5× apart, the lower one is noise and is dropped. Without this, real recordings read as
    `TTTT…` — every dot and dash longer than the "dot" the spikes suggested.
 6. **Read the Morse.** A mark under 0.4 dots is a noise spike and counts as gap; a gap under 0.25 dots
-   between two marks is a fade and joins them. A mark under two dots is a dot, else a dash; a gap of two
-   dots ends a character, of five a word. Codes map to characters through the Morse table; prosigns sent together come out as
+   between two marks is a fade and joins them. Thresholding the envelope lengthens every mark and
+   shortens every gap by the same bias *b* (11–15 ms on Trémolat), so the measured dot *dm* and the gap
+   inside a character *dg* — the lower cluster of recent gaps — straddle the true unit *u* = (*dm*+*dg*)/2,
+   *b* = (*dm*−*dg*)/2. A mark is a dash from 2*u*+*b*; a gap ends a character from 2*u*−*b* and a word
+   from 5*u*−*b*. Speed in WPM = 1.2 / *u*. Codes map to characters through the Morse table; prosigns sent together come out as
    `<AR>`, `<SK>`, `<KN>`, `<BT>`; an unknown code is `[err]`, never a guess.
 
 It emits characters with timestamps and its status — tone, speed, signal over noise — as events; the
 characters feed the segmenter exactly as before. The prototype's self-test decodes synthetic CW with known
-text at 14–28 WPM down to 6 dB SNR, and an empty passband to nothing, also when searched wider than the
-filter. On a real recording (Trémolat, 7033.05 kHz, 2026-10-03) it read `CQ POTA DE DJ0YI DJ0YI POTA K`
+text at 14–28 WPM down to 6 dB SNR — also with the keying bias a real receiver adds — and an empty
+passband to nothing, also when searched wider than the filter. On a real recording (Trémolat, 7033.05 kHz, 2026-10-03) it read `CQ POTA DE DJ0YI DJ0YI POTA K`
 and the answer from `OK7DA/P` with `RST 5NN`, with errors where the signal faded.
 
 ## The four sections

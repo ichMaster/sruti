@@ -20,21 +20,21 @@ uv run --no-project --with numpy python poc/receiver/cw_spike.py --browser-path 
 | Recording | Frequency | Recorded | Length | What is on it | Prototype decoder |
 |---|---|---|---|---|---|
 | `beacons` | 14 100.00 kHz | — | — | *pending: 20 m was closed at dawn; retried as the band opens* | — |
-| `cq` | 7 033.05 kHz | 2026-10-03 11:32 UTC | 177 s | DJ0YI (Germany) calling CQ POTA from a park; OK7DA/P (Czechia, portable) answers; RST 5NN | tone 498 Hz, 25 dB, ~15 WPM |
-| `conversation` | 7 027.50 kHz | 2026-10-04 05:45 UTC | 238 s | E72U (Bosnia and Herzegovina) running the TRC DX Contest: nine contacts — F6FTI, SP1AEN, YL2TD, LZ3ZZ, YO3GNF, SP3VT, OM3CPF, UW3WU, YO4TL — each `5NN` plus a serial number | tone 498 Hz, 23 dB, ~27 WPM |
+| `cq` | 7 033.05 kHz | 2026-10-03 11:32 UTC | 177 s | DJ0YI (Germany) calling CQ POTA from a park; OK7DA/P (Czechia, portable) answers; RST 5NN | tone 498 Hz, 25 dB, ~18 WPM |
+| `conversation` | 7 027.50 kHz | 2026-10-04 05:45 UTC | 238 s | E72U (Bosnia and Herzegovina) running the TRC DX Contest: nine contacts — F6FTI, SP1AEN, YL2TD, LZ3ZZ, YO3GNF, SP3VT, OM3CPF, UW3WU, YO4TL — each `5NN` plus a serial number | tone 498 Hz, 23 dB, ~31 WPM |
 
 ## What the prototype decoder reads
 
-Verbatim output of `cw_decode.py` as of commit `5fbcd34` — the baseline the v1.2 decoder must match or
-beat. `[err]` is a code the decoder could not map; errors cluster where the signal fades or a weaker
+Verbatim output of `cw_decode.py` after the v0.1 code review (bias-aware gap thresholds) — the baseline
+the v1.2 decoder must match or beat. `[err]` is a code the decoder could not map; errors cluster where the signal fades or a weaker
 station transmits.
 
 **`cq`**
 
 ```
-IEPOTA K CQ POTA DE SP0YE DJ0YI POTA K E DEQ POTA DE DJ0YI DJ0YI POTA K TEK7<BT>/P AGN DE OB 7 <BT>[err]
-OK7 <BT>[err] OKBEEOK7DE EIDAXP OK7DA/PDEDJ0[err]I G T EIM [err]RST5 5N 55N GK [err]6E[err] 5T
-I95NN7[err]EEEEME[err] Q3EI/E E 5GEI H B 9? [err]E5BTRI G A K EIB8 HB[err]
+IEPOTA K CQ POTA DE DP 0YE DJ0YI POTA K E DEQ POTA DE DJ0YI DJ0YI POTA K TTK7 DA/P AGN DE O NI 7
+<BT>[err] OK7 <BT>[err] OKTS EEOK7DE EIDAXP OK 7DA/P DEDJ 0 YI G T EIM [err] RST 5 5N 5 5N GK
+RRRTFE[err] 5T I95NN7[err]EEEEM E[err] Q3EEE /E E 5GE N H B 9? NDE<AS> B TR I G A K E I B8 H B[err]I
 ```
 
 Read by a person: `CQ POTA DE DJ0YI DJ0YI POTA K` (twice) · `OK7DA/P` calling, `AGN` (again) · `OK7DA/P DE
@@ -43,12 +43,12 @@ DJ0YI … RST 5NN` · the rest is the weaker OK7DA/P and fading.
 **`conversation`**
 
 ```
-IUU E72U FI[err] T F6FTI 5NN T56 INA I E [err]E TD I E EI E[err] MG E SB IE EE E I J [err]MZL? T ISE I E E
-TU E72U SP1AE N SP1AEN [err]1AEN 5IN T57 TU 5NN616 TRC V[err]U YL2TD YL2TD [err]N T58 ? E YL2TD [err]N T58 TU
-5NN485TRC TU E72U I TEST E72U E72U TEST E72U E72U [err]Z3ZZ E I ZZ E LZ3ZZ LZ3ZZ [err]N T59 5NN 391 TRC TU
-YX3GNF YO3GNF 5NN T60 A 5NN 1TU ETU E72U S[err]U SP[err]T E E SP3VT 5NN T61 TU 5NN4T6 T TU O[err]KU R
-UOM3CNF 5IN T62 G M3CPF 5NNE281 E ETU EZ OM3CPF TU EE 4W3WU UW3WU 5NN T63 5NN 15T E E TU E72U YO4TL
-YO4TL [err]N T64 M
+IUU E72U EETE I[err] T F6FTI 5NN T56 INA I E [err]E TD I E EI EB NR E E[err] IE IE I F CALL? T EEEIE EE
+E E TU E72U SP1AE N SP1AE N DP1AEN 5NN T57 TU 5NN6 16 TRC TU[err]2U YL2TD YL2TD 5NN T58 ? E YL2TD 5NN
+T58 TU 5NN 485 TRC TU E72U I TEST E72U E72U TEST E72U E72U [err]Z3ZZ E I ZZ E LZ3ZZ LZ3ZZ 5NN T59 5NN
+391 TRC TU NMQSMGNF YO3GNF 5NN T60 A 5NN 1TU ETU E72U SOQU SP3VT E E SP3VT 5NN T61 TU 5NN 4T6 T TU
+O[err]KU R UOM3CNF 5NN T62 G M3CPF 5NNE281 E ETU EZ OM3CPF TU EE 4W3WU UW3WU 5NN T63 5NN 15T E E TU
+E72U YO4TL YO4TL 5NN T64 M
 ```
 
 Read by a person: E72U's serials run `T56` … `T64` (`T` is a cut zero: 056 … 064), each contact

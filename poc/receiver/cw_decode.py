@@ -173,18 +173,33 @@ def dot_length(marks: list[int]) -> float:
     return float(np.clip(dot, lo_hops, hi_hops))
 
 
-def decode(segments: list[list], adapt_marks: int = 24) -> tuple[str, list[float]]:
-    """Text, plus the dot length (hops) used along the way. The dot length follows the last marks.
+def element_gap(gaps: list[int], dot: float) -> float:
+    """The gap inside a character, in hops: the lower cluster of gap lengths, kept near the dot."""
+    if len(gaps) < 4:
+        return dot
+    a, _ = _two_means(np.log(np.maximum(np.asarray(gaps, dtype=float), 1.0)))
+    return float(np.clip(np.exp(a), 0.3 * dot, 1.5 * dot))
 
-    Marks shorter than GLITCH_MARK dots count as gap (noise spikes); gaps shorter than DROPOUT_GAP dots
-    between two marks join them into one (a fade inside a dash).
+
+def decode(segments: list[list], adapt_marks: int = 24) -> tuple[str, list[float]]:
+    """Text, plus the Morse unit (hops) used along the way. The unit follows the last marks and gaps.
+
+    Thresholding the envelope lengthens every mark and shortens every gap by the same bias b, so the dot
+    as measured (dm) and the gap inside a character (dg) straddle the true unit u = (dm + dg) / 2, with
+    b = (dm - dg) / 2. A mark is a dash from 2u + b; a gap ends a character from 2u - b and a word from
+    5u - b. Marks shorter than GLITCH_MARK dots count as gap (noise spikes); gaps shorter than DROPOUT_GAP
+    dots between two marks join them into one (a fade inside a dash).
     """
     marks = [n for k, n in segments if k]
     if not marks:
         return "", []
     dot = dot_length(marks[:adapt_marks] if len(marks) >= 6 else marks)
+    first = next(i for i, (k, _) in enumerate(segments) if k)
+    inner = [n for k, n in segments[first:] if not k and n >= DROPOUT_GAP * dot]  # gaps after the first mark
+    dgap = element_gap(inner[:adapt_marks], dot)
     recent: list[int] = []
-    text, symbol, dots_used = [], "", []
+    recent_gaps: list[int] = []
+    text, symbol, units_used = [], "", []
     mark, gap = 0, 0
 
     def flush_char():
@@ -194,21 +209,24 @@ def decode(segments: list[list], adapt_marks: int = 24) -> tuple[str, list[float
             symbol = ""
 
     def commit_mark():
-        nonlocal symbol, dot
+        nonlocal symbol, dot, dgap
         if not mark:
             return
-        symbol += "." if mark < 2 * dot else "-"
+        unit, bias = (dot + dgap) / 2, (dot - dgap) / 2
+        symbol += "." if mark < 2 * unit + bias else "-"
         recent.append(mark)
         if len(recent) >= 8 and len(recent) % 4 == 0:
             dot = dot_length(recent[-adapt_marks:])
-        dots_used.append(dot)
+            dgap = element_gap(recent_gaps[-adapt_marks:], dot)
+        units_used.append((dot + dgap) / 2)
 
     def take_gap():
-        if gap >= 5 * dot:  # word gap (7 dots nominal)
+        unit, bias = (dot + dgap) / 2, (dot - dgap) / 2
+        if gap >= 5 * unit - bias:  # word gap (7 units nominal)
             flush_char()
             if text and text[-1] != " ":
                 text.append(" ")
-        elif gap >= 2 * dot:  # character gap (3 dots nominal)
+        elif gap >= 2 * unit - bias:  # character gap (3 units nominal)
             flush_char()
 
     for key_down, n in segments:
@@ -220,11 +238,13 @@ def decode(segments: list[list], adapt_marks: int = 24) -> tuple[str, list[float
         else:
             commit_mark()
             take_gap()
+            if mark:
+                recent_gaps.append(gap)
             mark = n
         gap = 0
     commit_mark()
     flush_char()
-    return "".join(text).strip(), dots_used
+    return "".join(text).strip(), units_used
 
 
 # ---------------------------------------------------------------- the whole chain
@@ -237,15 +257,17 @@ def decode_audio(x: np.ndarray, fs: float, band_hz: tuple[float, float] = TONE_B
         return {"text": "", "tone_hz": tone, "prominence_db": prominence, "wpm": 0.0, "seconds": len(x) / fs}
     env = envelope_db(x, fs, tone)
     segments = runs(keying(env))
-    text, dots = decode(segments)
-    wpm = 1.2 / (float(np.median(dots)) * HOP_S) if dots else 0.0
+    text, units = decode(segments)
+    wpm = 1.2 / (float(np.median(units)) * HOP_S) if units else 0.0
     return {"text": text, "tone_hz": tone, "prominence_db": prominence, "wpm": wpm, "seconds": len(x) / fs}
 
 
 # ---------------------------------------------------------------- self-test on synthetic CW
 
 def synthesize(text: str, wpm: float, fs: float = 12000.0, tone: float = 620.0, snr_db: float = 10.0,
-               seed: int = 1) -> np.ndarray:
+               seed: int = 1, bias_s: float = 0.0) -> np.ndarray:
+    """Synthetic CW in the receiver's passband. bias_s lengthens every mark and shortens the gap after it,
+    as a real receiver's filter and the envelope threshold do (~11-15 ms measured on Trémolat)."""
     rng = np.random.default_rng(seed)
     inverse = {v: k for k, v in MORSE.items()}
     unit = 1.2 / wpm
@@ -259,10 +281,10 @@ def synthesize(text: str, wpm: float, fs: float = 12000.0, tone: float = 620.0, 
     for word in text.split(" "):
         for ch in word if not word.startswith("<") else [word]:
             for j, sym in enumerate(inverse[ch]):
-                pieces.append(tone_for(unit if sym == "." else 3 * unit))
+                pieces.append(tone_for((unit if sym == "." else 3 * unit) + bias_s))
                 if j < len(inverse[ch]) - 1:
-                    pieces.append(np.zeros(int(unit * fs)))
-            pieces.append(np.zeros(int(3 * unit * fs)))
+                    pieces.append(np.zeros(int((unit - bias_s) * fs)))
+            pieces.append(np.zeros(int((3 * unit - bias_s) * fs)))
         pieces.append(np.zeros(int(4 * unit * fs)))
     pieces.append(np.zeros(int(0.8 * fs)))
     clean = np.concatenate(pieces) if text else np.zeros(int(20 * fs))
@@ -284,12 +306,18 @@ def selftest() -> int:
         ("CQ CQ DE IZ4PHG IZ4PHG K", 22, 10.0, (200.0, 2800.0)),
         ("", 20, 10.0, (7000.0, 8000.0)),  # a band above the Nyquist frequency: no tone, no crash
     ]
+    biased = [  # marks +15 ms, gaps -15 ms, as measured on the conversation recording
+        ("TU E72U SP1AEN 5NN 616 TRC TEST E72U", 28, 20.0),
+        ("CQ POTA DE DJ0YI DJ0YI POTA K", 18, 15.0),
+    ]
     failed = 0
-    for text, wpm, snr, *band in cases:
-        got = decode_audio(synthesize(text, wpm, snr_db=snr), 12000.0, *band)
+    runs_ = [(c, 0.0) for c in cases] + [(c, 0.015) for c in biased]
+    for (text, wpm, snr, *band), bias in runs_:
+        got = decode_audio(synthesize(text, wpm, snr_db=snr, bias_s=bias), 12000.0, *band)
         ok = got["text"] == text
         failed += not ok
-        print(f"{'ok ' if ok else 'BAD'} {wpm:>2} WPM, SNR {snr:4.1f} dB → {got['wpm']:4.1f} WPM, "
+        print(f"{'ok ' if ok else 'BAD'} {wpm:>2} WPM, SNR {snr:4.1f} dB{', bias' if bias else ''}"
+              f" → {got['wpm']:4.1f} WPM, "
               f"tone {got['tone_hz']:.0f} Hz: {got['text']!r}" + ("" if ok else f"  (want {text!r})"))
     return 1 if failed else 0
 
