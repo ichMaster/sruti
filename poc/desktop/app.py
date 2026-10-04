@@ -28,7 +28,7 @@ import urllib.parse
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 sys.path.insert(0, str(HERE.parent))
-import explain_piece as ep  # noqa: E402
+import explain_piece as ep
 
 WPM = 22
 GEMINI_MODEL = "gemini-3.8-flash"
@@ -242,7 +242,7 @@ class Api:
     def _start_session(self, freq_khz: float, receiver: str) -> Session:
         self._stop.set()
         self._stop = threading.Event()
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc).astimezone()
         freq_label = f"{freq_khz:g}"
         session = Session(
             id=f"{now:%Y%m%dT%H%M%S}-{len(self._sessions) + 1}",
@@ -379,8 +379,8 @@ def write_preview(path: pathlib.Path) -> None:
     events: list = []
     api = Api(live=False, speed=1, sink=events.append)
     init = api.ready()
-    api._explaining.acquire()  # noqa: SLF001 - preview only: run Explain inline
-    api._run_explain(api._current)  # noqa: SLF001
+    api._explaining.acquire()
+    api._run_explain(api._current)
     snapshot = {"init": init, "events": events}
     html = page().replace("<!--PREVIEW-->", f"<script>window.__PREVIEW__ = {json.dumps(snapshot)};</script>")
     path.write_text(html, encoding="utf-8")
@@ -405,12 +405,12 @@ def main() -> int:
     api = Api(live=args.live, speed=args.speed, selftest=args.selftest)
     window = webview.create_window("sruti", html=page(), js_api=api, width=1320, height=860,
                                    min_size=(980, 640), text_select=True, background_color="#11161c")
-    api._window = window  # noqa: SLF001
+    api._window = window
 
     def selftest_timer():
         time.sleep(args.selftest)
-        print(f"selftest: emitted={api._emitted} rendered_ack={api._acks} "  # noqa: SLF001
-              f"sessions={len(api._sessions)} pieces={api._current.pieces}")  # noqa: SLF001
+        print(f"selftest: emitted={api._emitted} rendered_ack={api._acks} "
+              f"sessions={len(api._sessions)} pieces={api._current.pieces}")
         window.destroy()
 
     webview.start(selftest_timer if args.selftest else None)
