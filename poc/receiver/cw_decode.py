@@ -65,6 +65,8 @@ def find_tone(x: np.ndarray, fs: float, band_hz: tuple[float, float] = TONE_BAND
     loud = np.percentile(power, 90, axis=0)
     freqs = np.fft.rfftfreq(n, 1 / fs)
     band = (freqs >= band_hz[0]) & (freqs <= band_hz[1])
+    if not band.any():  # the band holds no frequency of this audio
+        return 0.0, 0.0
     # Only bins the receiver's filter lets through: the skirts outside its passband are near silent and
     # would drag the median down until plain noise looked like a tone.
     typical = np.median(power, axis=0)
@@ -280,6 +282,7 @@ def selftest() -> int:
         ("", 20, 0.0, TONE_BAND),  # an empty passband: noise only, nothing may be decoded
         ("", 20, 0.0, (200.0, 2800.0)),  # the same, searched wider than the receiver's filter
         ("CQ CQ DE IZ4PHG IZ4PHG K", 22, 10.0, (200.0, 2800.0)),
+        ("", 20, 10.0, (7000.0, 8000.0)),  # a band above the Nyquist frequency: no tone, no crash
     ]
     failed = 0
     for text, wpm, snr, *band in cases:
