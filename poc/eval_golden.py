@@ -178,19 +178,28 @@ def check(result: dict, example: dict, i: int) -> None:
         result["notes"].append("rebuild")
 
 
-def rescore(saved: pathlib.Path) -> pathlib.Path:
-    """Re-run the checks on a saved run's answers against the current references; no model call."""
+def rescore(saved: pathlib.Path, examples_dir: pathlib.Path = EXAMPLES) -> pathlib.Path:
+    """Re-run the checks on a saved run's answers against the current references; no model call.
+
+    Refuses when a golden example's pieces are no longer the ones the model saw: the answers would be
+    scored against text they never answered.
+    """
     data = json.loads(saved.read_text(encoding="utf-8"))
     runs = {}
     for name, results in data["runs"].items():
-        example = parse_example(EXAMPLES / f"{name}.md")
+        example = parse_example(examples_dir / f"{name}.md")
+        if [r["piece"] for r in results] != example["pieces"]:
+            raise SystemExit(f"{saved.name}: the pieces of {name} changed since this run; re-run it instead")
         for i, result in enumerate(results):
             result["ref"] = example["refs"][i]
             if result["ans"] is not None:
                 check(result, example, i)
         runs[name] = results
+    stamp = saved.stem[:15]  # <YYYY-MM-DD-HHMM>-… for runs saved before run_at was recorded
+    run_at = data.get("run_at") or f"{stamp[:10]} {stamp[11:13]}:{stamp[13:15]} UTC"
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     out = saved.with_suffix(".md")
-    out.write_text(report(runs, data["model"], data["glossary"]), encoding="utf-8")
+    out.write_text(report(runs, data["model"], data["glossary"], f"{run_at} · re-scored {now}"), encoding="utf-8")
     return out
 
 
@@ -205,8 +214,8 @@ def cell(s: str) -> str:
     return s.replace("|", "\\|").replace("\n", " ")
 
 
-def report(runs: dict, model: str, glossary: str) -> str:
-    when = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+def report(runs: dict, model: str, glossary: str, when: str | None = None) -> str:
+    when = when or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines = [f"# Eval — {model}, glossary {glossary}", "",
              f"**Run:** {when} · **Examples:** {', '.join(runs)} · **Budget:** {BUDGET_S:.0f} s per piece", "",
              "| Example | Pieces | Passed | Latency min / avg / max | Tokens in / out | Cost | Actions (model) |",
@@ -293,6 +302,27 @@ def selftest() -> int:
     print(f"{'ok ' if marks_ok else 'BAD'} a bracketed mark counts as doubt; a plain reading of an unreadable token fails")
     print(f"{'ok ' if alternatives_ok else 'BAD'} slash alternatives are two call signs; a new one fails, (?) or not;"
           " joined fragments pass")
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = pathlib.Path(tmp)
+        golden = "# T\n\n## Pieces\n\n```text\nCQ DE DJ0YI K\n```\n\n## Reference — piece tier\n\n### Piece 1 · append\n\n" \
+                 "| Token | Meaning |\n|---|---|\n| `CQ DE DJ0YI K` | CQ from DJ0YI, over |\n\n**Message:** CQ from DJ0YI.\n"
+        (tmp / "009-t.md").write_text(golden, encoding="utf-8")
+        answer = {"gloss": [{"token": "CQ DE DJ0YI K", "meaning": "CQ from DJ0YI"}], "action": "append",
+                  "message": "CQ from DJ0YI."}
+        saved = {"model": "canned", "glossary": "hints", "run_at": "2026-01-01 00:00 UTC", "runs": {"009-t": [
+            {"piece": "CQ DE DJ0YI K", "ans": answer, "seconds": 1.0, "stats": {}, "failures": [], "notes": []}]}}
+        (tmp / "run.json").write_text(json.dumps(saved), encoding="utf-8")
+        same_ok = "2026-01-01 00:00 UTC · re-scored" in rescore(tmp / "run.json", tmp).read_text(encoding="utf-8")
+        saved["runs"]["009-t"][0]["piece"] = "CQ DE DJ0YI DJ0YI K"
+        (tmp / "run.json").write_text(json.dumps(saved), encoding="utf-8")
+        try:
+            rescore(tmp / "run.json", tmp)
+            changed_ok = False
+        except SystemExit:
+            changed_ok = True
+    ok &= same_ok and changed_ok
+    print(f"{'ok ' if same_ok and changed_ok else 'BAD'} rescore keeps the run time and refuses changed pieces")
     text = report({"selftest": results}, "canned", "hints")
     has_rows = "OK7XYZ" in text and "Reference message" in text
     ok &= has_rows
@@ -342,9 +372,10 @@ def main() -> int:
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d-%H%M")
     out = REPORTS / f"{stamp}-{args.model}-{args.glossary}.md"
     out.write_text(report(runs, args.model, args.glossary), encoding="utf-8")
+    run_at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     out.with_suffix(".json").write_text(json.dumps(
-        {"model": args.model, "glossary": args.glossary, "runs": runs}, ensure_ascii=False, indent=1),
-        encoding="utf-8")
+        {"model": args.model, "glossary": args.glossary, "run_at": run_at, "runs": runs},
+        ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"report: {out.relative_to(ROOT)}", file=sys.stderr)
     return 0
 
