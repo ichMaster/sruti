@@ -29,6 +29,8 @@ class Transport(Protocol):
 
 Connector = Callable[[str], Awaitable[Transport]]
 
+MAX_MESSAGE = 1 << 20  # the largest seen is ~47 KB (load_dxcfg); audio frames are ~1 KB
+
 
 def fetch_timestamp(host_port: str, timeout: float = 10.0) -> int:
     """The connection timestamp the receiver issues at /VER, as its browser page asks for it."""
@@ -64,7 +66,7 @@ async def connect_kiwisdr(host_port: str) -> Transport:
         ts = await asyncio.to_thread(fetch_timestamp, host_port)
         connection = await websockets.connect(
             f"ws://{host_port}/ws/no_wf/{ts}/SND", open_timeout=15, ping_interval=None, compression=None,
-            max_size=None)
+            max_size=MAX_MESSAGE)
     except (OSError, TimeoutError, ValueError, KeyError, websockets.InvalidHandshake) as exc:
         raise TransportClosed(f"could not connect to {host_port}: {type(exc).__name__}: {exc}") from None
     return WebSocketTransport(connection)
