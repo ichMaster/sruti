@@ -1,0 +1,24 @@
+sruti — release notes
+=====================
+
+Version 0.1.0 (2026-10-04)
+---------------------------
+- Phase v0.1 — Text from the receiver, decoded on the Mac.
+- Specification: MISSION, ARCHITECTURE, ROADMAP (v0–v2), the design brief and the Claude Design
+  deliverable, the ports & perimeters diagram; delivery skills adapted from matrix-agora.
+- PoCs: the Gemini piece-tier model comparison; the pywebview desktop window.
+- SRUTI-001: kiwiclient has no license — only the spike uses it, from an uncommitted checkout; the
+  product writes its own receiver client.
+- Re-plan: the receiver's CW_decoder extension was missing or silent, so sruti decodes CW on the Mac;
+  ROADMAP adds v1.2 The CW decoder.
+- SRUTI-004: prototype CW decoder (poc/receiver/cw_decode.py) — tone search inside the filter, adaptive
+  threshold, noise-proof speed estimate, bias-aware gap thresholds, prosigns, [err] for unknown codes;
+  self-test 10/10. The spike connects like the browser page, tunes to the signal's own frequency,
+  records WAV and decodes it on the Mac; --passband, --seconds, --scan.
+- SRUTI-002: fixtures cq (DJ0YI calling CQ POTA, 7033.05 kHz) and conversation (E72U's contest run,
+  7027.50 kHz) from Trémolat, confirmed by the owner; captures mask the owner's IP and keep only the size
+  of the receiver's configuration blobs.
+- SRUTI-003: message inventory — 43 message types, all documented in ARCHITECTURE §The receiver.
+- Code review: 11 findings, 5 fixed, 6 deferred to v1.1, v1.2, v2 and the backlog.
+- Moved by the owner: the 14.100 MHz beacon recording and its check, to v1.2 (20 m was closed during
+  the v0.1 recording window).
