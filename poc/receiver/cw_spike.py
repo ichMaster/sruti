@@ -90,6 +90,23 @@ def replay(path: pathlib.Path) -> int:
 
 # ---------------------------------------------------------------- live (kiwiclient)
 
+# The receiver's configuration, sent to every listener: its owner's contact details and band plans,
+# nothing sruti reads. Captures keep only its size, since they get committed.
+CONFIG_BLOBS = ("load_cfg", "load_dxcfg", "load_dxcomm_cfg")
+
+
+def sanitize(msg: str) -> str:
+    if msg.startswith("MSG client_public_ip="):
+        return "MSG client_public_ip=0.0.0.0"  # the owner's address
+    if msg.startswith("MSG "):
+        pairs = []
+        for pair in msg[4:].split(" "):
+            name, eq, value = pair.partition("=")
+            pairs.append(f"{name}=omitted:{len(value)}" if name in CONFIG_BLOBS and eq else pair)
+        return "MSG " + " ".join(pairs)
+    return msg
+
+
 class Capture:
     def __init__(self, path: pathlib.Path | None):
         self._file = path.open("a", encoding="utf-8") if path else None
@@ -98,9 +115,7 @@ class Capture:
     def write(self, ws: str, direction: str, msg: str) -> None:
         if self._file is None or msg == "SET keepalive":
             return
-        if msg.startswith("MSG client_public_ip="):
-            msg = "MSG client_public_ip=0.0.0.0"  # the owner's address: captures get committed
-        line = json.dumps({"t": round(time.time(), 3), "ws": ws, "dir": direction, "msg": msg},
+        line = json.dumps({"t": round(time.time(), 3), "ws": ws, "dir": direction, "msg": sanitize(msg)},
                           ensure_ascii=False)
         with self._lock:
             self._file.write(line + "\n")
@@ -188,9 +203,25 @@ def make_streams(args, capture: Capture, stop: threading.Event):
         def __init__(self):
             super().__init__("SND")
             self.wav = None  # set by listen() when --audio is given
+            self.scan_index = 0
+            self.tuned_at = time.time()
+
+        def _next_scan_step(self):
+            if time.time() - self.tuned_at < args.dwell:
+                return
+            self.scan_index += 1
+            if self.scan_index >= len(args.scan):
+                stop.set()
+                return
+            self.wav.close()
+            self.wav = open_wav(scan_wav(args, self.scan_index))
+            self.set_mod("cw", args.passband_hz[0], args.passband_hz[1], args.scan[self.scan_index])
+            self.tuned_at = time.time()
 
         def _process_aud(self, body):
             super()._process_aud(body)
+            if args.scan and self.wav is not None:
+                self._next_scan_step()
             if self.wav is None or len(body) <= 7:
                 return
             import numpy as np
@@ -217,6 +248,7 @@ def make_streams(args, capture: Capture, stop: threading.Event):
             if getattr(self, "_tuned", False):
                 return
             self._tuned = True
+            self.tuned_at = time.time()
             self.set_name(IDENTITY)
             self.set_mod("cw", args.passband_hz[0], args.passband_hz[1], args.freq)
             self.set_agc(on=True)
@@ -273,6 +305,35 @@ def make_streams(args, capture: Capture, stop: threading.Event):
     return Sound(), Decoder()
 
 
+def open_wav(path: pathlib.Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    w = wave.open(str(path), "wb")  # noqa: SIM115 - the caller closes it
+    w.setnchannels(1)
+    w.setsampwidth(2)
+    w.setframerate(12000)  # the KiwiSDR audio rate
+    return w
+
+
+def scan_wav(args, i: int) -> pathlib.Path:
+    base = pathlib.Path(args.audio)
+    return base.with_name(f"{base.stem}-{args.scan[i]:g}{base.suffix}")
+
+
+def print_decoded(path: pathlib.Path, passband: tuple, label: str = "") -> bool:
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import cw_decode
+
+    x, fs = cw_decode.load_wav(str(path))
+    if len(x) == 0:
+        return False
+    r = cw_decode.decode_audio(x, fs, passband)
+    print(f"--- {label}decoded on the Mac (poc/receiver/cw_decode.py) ---", file=sys.stderr)
+    print(r["text"] or "(no CW found)")
+    print(f"[{r['seconds']:.0f} s · tone {r['tone_hz']:.0f} Hz, {r['prominence_db']:.1f} dB above the passband"
+          f" · ~{r['wpm']:.0f} WPM]", file=sys.stderr)
+    return True
+
+
 def drive(stream, stop: threading.Event, errors: list) -> None:
     try:
         stream.connect(stream._options.server_host, stream._options.server_port)
@@ -300,12 +361,8 @@ def listen(args) -> int:
     sound, decoder = make_streams(args, capture, stop)
     audio = pathlib.Path(args.audio) if args.audio else None
     if audio:
-        audio.parent.mkdir(parents=True, exist_ok=True)
-        sound.wav = wave.open(str(audio), "wb")  # noqa: SIM115 - open for the whole session, closed below
-        sound.wav.setnchannels(1)
-        sound.wav.setsampwidth(2)
-        sound.wav.setframerate(12000)  # the KiwiSDR audio rate
-    print(f"{args.receiver} · {args.freq} kHz"
+        sound.wav = open_wav(scan_wav(args, 0) if args.scan else audio)
+    print(f"{args.receiver} · {args.freq} kHz{' (scan ' + str(len(args.scan)) + ' steps)' if args.scan else ''}"
           f"{' · capture ' + str(out) if out else ''}{' · audio ' + str(audio) if audio else ''}"
           " — Ctrl-C to stop", file=sys.stderr)
 
@@ -314,8 +371,9 @@ def listen(args) -> int:
         if i:
             time.sleep(2)  # the channel must exist before the extension attaches to it
         threading.Thread(target=drive, args=(s, stop, errors), daemon=True).start()
+    started = time.time()
     try:
-        while not stop.is_set():
+        while not stop.is_set() and not (args.seconds and time.time() - started >= args.seconds):
             time.sleep(0.2)
     except KeyboardInterrupt:
         pass
@@ -333,18 +391,12 @@ def listen(args) -> int:
         print(f"receiver ended the session — {err}", file=sys.stderr)
     if audio:
         sound.wav.close()
-        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-        import cw_decode
-
-        x, fs = cw_decode.load_wav(str(audio))
-        if len(x) == 0:
+        paths = [scan_wav(args, i) for i in range(sound.scan_index + 1)] if args.scan else [audio]
+        decoded = [print_decoded(p, args.passband_hz, f"{p.name} · " if args.scan else "") for p in paths
+                   if p.exists()]
+        if not any(decoded):
             print("no audio was recorded", file=sys.stderr)
             return 1
-        r = cw_decode.decode_audio(x, fs, args.passband_hz)
-        print("--- decoded on the Mac (poc/receiver/cw_decode.py) ---", file=sys.stderr)
-        print(r["text"] or "(no CW found)")
-        print(f"[{r['seconds']:.0f} s · tone {r['tone_hz']:.0f} Hz, {r['prominence_db']:.1f} dB above the passband"
-              f" · ~{r['wpm']:.0f} WPM]", file=sys.stderr)
     return 1 if errors else 0
 
 
@@ -356,6 +408,10 @@ def main() -> int:
                     help="audio passband in Hz (default %(default)s); wider, e.g. 200-2800, tolerates a frequency"
                          " read off the waterfall")
     ap.add_argument("--pboff", type=int, default=500, help="tone offset for --kiwi-decoder, Hz (default 500)")
+    ap.add_argument("--seconds", type=float, help="stop after this many seconds")
+    ap.add_argument("--scan", help="comma-separated frequencies in kHz to visit in turn on one connection,"
+                                   " one WAV each (needs --audio)")
+    ap.add_argument("--dwell", type=float, default=20, help="seconds per --scan frequency (default 20)")
     ap.add_argument("--out", help="write the raw capture to this JSONL file")
     ap.add_argument("--replay", help="print the text of a saved capture and exit (offline)")
     ap.add_argument("--audio", help="record the channel audio to this WAV file and decode it on the Mac")
@@ -367,6 +423,11 @@ def main() -> int:
                     help="connect like the browser page: the /VER timestamp and the /ws/no_wf/ path")
     args = ap.parse_args()
     args.passband_hz = tuple(int(v) for v in args.passband.split("-"))
+    if args.scan:
+        args.scan = [float(v) for v in args.scan.split(",")]
+        args.freq = args.scan[0]
+        if not args.audio:
+            ap.error("--scan needs --audio")
     if args.replay:
         return replay(pathlib.Path(args.replay))
     if not args.receiver or args.freq is None:
