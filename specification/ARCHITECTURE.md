@@ -320,7 +320,7 @@ explanation  {session, tier: "session", upto_seq, model, text, latency_ms, cost_
 | | Piece tier — Gemini 3.8 Flash | Session tier — Claude Opus 5.5 |
 |---|---|---|
 | When | every closed piece — buffered, never word by word | **only on the user's Explain action**; never on a timer, never automatic |
-| Input | glossary + the last 5 raw pieces + the recent section-3 entries + the new piece | glossary + the whole session |
+| Input | the hints glossary (`glossary/cw-hints.md`) + the last 5 raw pieces + the recent section-3 entries + the new piece | the full glossary (`glossary/cw.md`) + the whole session |
 | Output | JSON `{gloss, action, message/rebuilt}`, in English → sections 2 and 3 | a full explanation in Ukrainian, reference-answer style → section 4 |
 | Where | Gemini API, `generativelanguage.googleapis.com:443` | Claude API, `api.anthropic.com:443` |
 | Budget | ≤ 5 s after the piece closes; the running cost is summed per session and shown | ≤ 30 s per press; every call's cost is shown and summed per session |
@@ -330,10 +330,64 @@ explanation  {session, tier: "session", upto_seq, model, text, latency_ms, cost_
 structured output against the `{gloss, action, message/rebuilt}` schema (`responseSchema`), thinking level
 `low` and the default temperature. The key travels in the `x-goog-api-key` header, never in the URL.
 Prices: $0.75 / $3.75 per million input / output tokens through 2026-12-31, $1.50 / $7.50 from 2027-01-01
-(thinking tokens bill as output). At ~1–2.5K input tokens (depending on the glossary form) and ~0.6K
-output tokens per piece: ≈ $0.003–0.004 per piece, about $0.3–0.4 per hour of lively traffic
-(~100 pieces), doubling in 2027. This tier spends automatically, piece by piece, so its running cost is
-shown next to the Explain costs.
+(thinking tokens bill as output). Measured on the golden examples in v0.2: ~1.45K input and ~0.4K output
+tokens per piece (thinking included), 1.5–4.1 s per piece. That is ≈ $0.0026 per piece and about $0.26
+per hour of lively traffic (~100 pieces), doubling in 2027. This tier spends automatically, piece by
+piece, so its running cost is shown next to the Explain costs.
+
+**The piece prompt (settled in v0.2).** The glossary form is the **hints file**, `glossary/cw-hints.md`
+(~2.6K characters): only what models get wrong — decoder damage, misread habits, contest and POTA
+conventions, call-sign rules. The model's own knowledge covers standard abbreviations. On the golden
+examples it matched the full glossary on quality, at half the input tokens. The full glossary twice
+read stray letters as cut numbers (`A` → 1, `T` → 0) where the hints run marked them as fragments
+(`poc/RESULTS.md` §v0.2, `poc/eval/`). The system instruction is this text, followed by `HINTS:` and the
+hints file verbatim:
+
+```text
+You are the piece explainer of sruti, a CW (Morse) listening agent.
+You receive decoded CW text from amateur-radio conversations. Decoders drop, split and merge
+letters; operators use CW abbreviations, Q-codes and prosigns.
+
+Rules — all of them hard:
+- Never invent. Unreadable text is rendered as [...]. A call sign is copied exactly as sent and
+  never "corrected" into a different one; never offer a call sign that is not in the text. If two
+  readings are possible, say so briefly.
+- Use your own knowledge of amateur-radio CW and of the operators' language; translate plain
+  words normally. The HINTS below list what models commonly get wrong: follow them. Rebuild a
+  damaged word when context makes it clear and say it is a reconstruction; if you are not sure
+  of a token, keep it as sent and mark it (?).
+- The operators' language may be Italian, German, English etc. Translate MEANING into English.
+- gloss: map the raw text token by token (words, abbreviations, Q-codes, prosigns, call signs),
+  in order, every token covered. Repeats stay in the gloss.
+- message: what the operator actually SAID, as one natural English message. Collapse CW
+  repetitions (CQ CQ CQ -> one general call; a doubled call sign -> once). Add nothing. A call sign
+  you joined from fragments keeps its (?) in the message too.
+- action: "none" if this piece adds nothing new for the reader beyond repeating what the recent
+  entries already say; "append" if it adds something (message = the new entry; a correction of an
+  earlier entry is also an append, phrased "correction: ..."); "rebuild" ONLY if the new piece
+  reframes what the recent entries say (then rebuilt = replacement list for those entries). A rebuild
+  that would leave the entries saying the same thing is wrong: that is "none".
+```
+
+The user message, per piece (the last 5 raw pieces; the recent section-3 entries, which a `rebuild`
+replaces):
+
+```text
+PREVIOUS RAW PIECES (ground truth, oldest first):
+- <piece>                                  (or "(none — session start)")
+
+RECENT SECTION-3 ENTRIES (what the reader has been told):
+1. <entry>                                 (or "(empty)")
+
+NEW PIECE:
+<the piece, exactly as decoded>
+```
+
+The response schema (`responseSchema`, the OpenAPI subset the Gemini API takes): an object with
+`gloss` (array of `{token, meaning}`, required), `action` (`none` | `append` | `rebuild`, required),
+`message` (string, nullable) and `rebuilt` (array of strings, nullable), properties in that order.
+Thinking level `low`, the default temperature. On the golden examples the model chose `rebuild` in 1–2
+of 15 pieces, each time when two copies of one call sign turned out to be one station.
 
 **Session model.** Claude Opus 5.5 (`claude-opus-5-5`, $4 / $20 per million input / output tokens) by
 default, at low effort; Claude Fable 5.1 (`claude-fable-5-1`, $10 / $50) by configuration. At an estimated

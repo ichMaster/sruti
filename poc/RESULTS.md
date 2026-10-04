@@ -66,6 +66,54 @@ million cached tokens) would cut only the smaller input part.
 
 1. **Decided (2026-10-02):** sections 2–3 run on `gemini-3.8-flash`; the local model is dropped from the
    specification. Section 4 stays on Claude Opus 5.5.
-2. **Open (v0.2):** the glossary in the prompt — the full file or the hints file.
+2. **Decided (v0.2, 2026-10-04):** the hints file. See §v0.2 below.
 3. **Settled by 1:** the 5 s budget holds with a full word-by-word gloss on `gemini-3.8-flash`
    (2.1–3.5 s per piece).
+
+## v0.2 — the golden examples
+
+**Date:** 2026-10-04 · **Script:** [eval_golden.py](eval_golden.py) · **Input:** the golden examples
+001 (Italian ragchew, 3 pieces), 002 (DJ0YI's POTA activation, 6) and 003 (E72U's contest run, 6) ·
+**Model:** `gemini-3.8-flash`, thinking low · **Reports:** [eval/](eval/), with the raw answers as JSON
+(re-scored offline with `--rescore`).
+
+| Run | Glossary | Prompt | Pieces passing the checks | Latency per piece | Tokens in / out per piece | Cost per piece |
+|---|---|---|---|---|---|---|
+| 17:30 | hints | PoC prompt; glossary without contest/POTA | 13 / 15 (14 without the checker's false alarms) | 1.5–3.9 s | 1,110 / 390 | $0.0023 |
+| 17:30 | full | the same | 13 / 15 (14 without the checker's false alarms) | 1.4–4.1 s | 2,430 / 410 | $0.0034 |
+| 17:33 | hints | + "never offer a call sign not in the text"; contest/POTA in both glossaries | 15 / 15 | 1.4–3.6 s | 1,400 / 390 | $0.0025 |
+| 17:33 | full | the same | 14 / 15 | 1.6–4.6 s | 2,750 / 470 | $0.0039 |
+| **17:38** | **hints** | **+ rebuild that changes nothing is `none`; `(?)` kept in the message** | **15 / 15** | **1.5–4.1 s** | **1,440 / 410** | **$0.0026** |
+
+The checks are: the schema; the 5 s budget; every raw token glossed; no call sign that the raw text lacks;
+unreadable text not glossed as certain. The 17:30 runs surfaced false alarms in the checker ("[dits]",
+"corrupted text", "OM3CPF/OM3CNF" read as one call sign; "garble" at 17:33). They were fixed before the
+decision, and the runs that saved their answers (17:33, 17:38) are re-scored. The 17:30 runs predate
+saving and show their raw score.
+
+### What the runs showed
+
+- **Misses the glossary fixed.** In the first run the model offered a call sign absent from the text
+  (`UR3WU?` beside `UW3WU`), and the full-glossary run read stray letters as cut numbers (`A` → 1,
+  `T` → 0). Adding contest and POTA conventions (`TEST`, serials in cut numbers, `TU`, `CQ POTA`, `/P`,
+  `NR?`, `CALL?`) and "a lone letter between exchanges is a fragment" fixed both in the hints run. The
+  full run kept reading `A`/`T` as digits.
+- **A reference error the model caught.** 002's reference read `RST 5 5N` as 599. The model read 559, and
+  it is right: N (`-.`) never decodes as 5 (`.....`), so `5 5N` is 5-5-N = 559. The reference was
+  corrected (and `NDE<AS>`, marked wholly unreadable, now reads `DE … <AS>`, as the model did).
+- **Quality against the bar.** 001's message carries the reference substance: the IC-7300, the
+  handover, the thanks, new to CW, taught by Lino. `IU3FEJ(?)` keeps its mark once the prompt asks for
+  it. 002 reads the POTA call, the answer from OK7DA/P (?) and the 559 report, and marks the weak station.
+  003 attributes every exchange correctly (`E72U to SP1AEN: 599 057; SP1AEN replies 599 616 TRC`) and
+  reads every serial.
+- **`rebuild`.** Chosen in 1–2 of 15 pieces per run, always in 002 when `DP 0YE` and `DJ0YI` turned out
+  to be one station — the case ARCHITECTURE §The four sections names. Once it rebuilt to the same text,
+  which the final prompt calls `none`.
+
+### Decision
+
+The **hints file** (`glossary/cw-hints.md`) and the prompt of [explain_piece.py](explain_piece.py), as
+written into ARCHITECTURE §The two tiers. Quality first: the hints and full runs are equal on substance,
+and the hints run follows the fragment rule that the full run broke. Then cost and latency: half the
+input tokens, ≈ $0.0026 per piece, under 4.1 s.
+

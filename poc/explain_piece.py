@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v0.2 PoC: run the local-explainer contract over example 001 against a model.
+"""v0.2 PoC: the piece-explainer contract over example 001, and the prompt the eval uses.
 
 Feeds the three recorded pieces one by one, maintaining the section-3 state between calls,
 exactly as the agent will: glossary + last raw pieces + recent section-3 entries + new piece
@@ -43,13 +43,14 @@ PIECES = [
      "LUI MI HA PRESO SOT T O LA SUA AAEA ET PE R"),
 ]
 
-SYSTEM_HEAD = """You are the local explainer of sruti, a CW (Morse) listening agent.
+SYSTEM_HEAD = """You are the piece explainer of sruti, a CW (Morse) listening agent.
 You receive decoded CW text from amateur-radio conversations. Decoders drop, split and merge
 letters; operators use CW abbreviations, Q-codes and prosigns.
 
 Rules — all of them hard:
 - Never invent. Unreadable text is rendered as [...]. A call sign is copied exactly as sent and
-  never "corrected" into a different one. If two readings are possible, say so briefly.
+  never "corrected" into a different one; never offer a call sign that is not in the text. If two
+  readings are possible, say so briefly.
 """
 
 RULE_WITH_GLOSSARY = (
@@ -70,11 +71,13 @@ SYSTEM_BODY = """- The operators' language may be Italian, German, English etc. 
 - gloss: map the raw text token by token (words, abbreviations, Q-codes, prosigns, call signs),
   in order, every token covered. Repeats stay in the gloss.
 - message: what the operator actually SAID, as one natural English message. Collapse CW
-  repetitions (CQ CQ CQ -> one general call; a doubled call sign -> once). Add nothing.
+  repetitions (CQ CQ CQ -> one general call; a doubled call sign -> once). Add nothing. A call sign
+  you joined from fragments keeps its (?) in the message too.
 - action: "none" if this piece adds nothing new for the reader beyond repeating what the recent
   entries already say; "append" if it adds something (message = the new entry; a correction of an
   earlier entry is also an append, phrased "correction: ..."); "rebuild" ONLY if the new piece
-  reframes what the recent entries say (then rebuilt = replacement list for those entries).
+  reframes what the recent entries say (then rebuilt = replacement list for those entries). A rebuild
+  that would leave the entries saying the same thing is wrong: that is "none".
 """
 
 

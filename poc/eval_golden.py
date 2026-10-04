@@ -31,8 +31,9 @@ CONTEXT_PIECES = 5  # raw pieces shown with the new one (ARCHITECTURE §The two 
 RECENT_ENTRIES = 5  # section-3 entries shown; a rebuild replaces exactly these
 BUDGET_S = 5.0
 PRICE_IN, PRICE_OUT = 0.75, 3.75  # USD per million tokens, gemini-3.8-flash through 2026-12-31
-CALL_SIGN = re.compile(r"\b(?:[A-Z]{1,2}|[A-Z][0-9]|[0-9][A-Z])[0-9][A-Z0-9]{0,3}[A-Z](?:/[A-Z0-9]+)?\b")
-UNSURE = ("[...]", "unreadable", "unclear", "garbled", "damaged", "fragment", "unknown", "uncertain", "(?)")
+CALL_SIGN = re.compile(r"\b(?:[A-Z]{1,2}|[A-Z][0-9]|[0-9][A-Z])[0-9][A-Z0-9]{0,3}[A-Z](?:/[A-Z0-9]{1,3})?\b")
+UNSURE = ("[...]", "unreadable", "unclear", "garble", "damaged", "corrupt", "fragment", "unknown", "uncertain",
+          "noise", "stray", "(?)")
 
 
 # ---------------------------------------------------------------- golden examples
@@ -111,7 +112,9 @@ def guessed_unreadable(ans: dict, ref: dict) -> list[str]:
         if not meaning.startswith("[...]"):
             continue
         got = model.get(squash(token))
-        if got is not None and not any(word in got.lower() for word in UNSURE) and "?" not in got:
+        doubtful = got is not None and (got.lstrip().startswith("[") or "?" in got
+                                        or any(word in got.lower() for word in UNSURE))
+        if got is not None and not doubtful:
             guessed.append(token)
     return guessed
 
@@ -144,28 +147,51 @@ def run_example(example: dict, system: str, call) -> list[dict]:
             results.append(result)
             continue
         result.update(ans=ans, seconds=seconds, stats=stats)
-        errors = schema_errors(ans)
-        if errors:
-            result["failures"] += [f"schema: {e}" for e in errors]
-        else:
-            if seconds > BUDGET_S:
-                result["failures"].append(f"over budget: {seconds:.1f} s > {BUDGET_S:.0f} s")
-            missing = uncovered_tokens(piece, ans["gloss"])
-            if missing:
-                result["failures"].append("gloss misses: " + " ".join(f"`{t}`" for t in missing))
-            invented = invented_call_signs(ans, " ".join(example["pieces"][: i + 1]))
-            if invented:
-                result["failures"].append("call sign not in the raw text: " + ", ".join(invented))
-            guessed = guessed_unreadable(ans, example["refs"][i])
-            if guessed:
-                result["failures"].append("unreadable text glossed as certain: "
-                                          + " ".join(f"`{t}`" for t in guessed))
-            if ans["action"] == "rebuild":
-                result["notes"].append("rebuild")
+        check(result, example, i)
+        if not any(f.startswith("schema:") for f in result["failures"]):
             apply_action(section3, ans)
         result["section3"] = [dict(e) for e in section3]
         results.append(result)
     return results
+
+
+def check(result: dict, example: dict, i: int) -> None:
+    """The automatic checks on one answer; fills result["failures"] and result["notes"]."""
+    ans, piece = result["ans"], example["pieces"][i]
+    result["failures"], result["notes"] = [], []
+    errors = schema_errors(ans)
+    if errors:
+        result["failures"] += [f"schema: {e}" for e in errors]
+        return
+    if result["seconds"] > BUDGET_S:
+        result["failures"].append(f"over budget: {result['seconds']:.1f} s > {BUDGET_S:.0f} s")
+    missing = uncovered_tokens(piece, ans["gloss"])
+    if missing:
+        result["failures"].append("gloss misses: " + " ".join(f"`{t}`" for t in missing))
+    invented = invented_call_signs(ans, " ".join(example["pieces"][: i + 1]))
+    if invented:
+        result["failures"].append("call sign not in the raw text: " + ", ".join(invented))
+    guessed = guessed_unreadable(ans, example["refs"][i])
+    if guessed:
+        result["failures"].append("unreadable text glossed as certain: " + " ".join(f"`{t}`" for t in guessed))
+    if ans["action"] == "rebuild":
+        result["notes"].append("rebuild")
+
+
+def rescore(saved: pathlib.Path) -> pathlib.Path:
+    """Re-run the checks on a saved run's answers against the current references; no model call."""
+    data = json.loads(saved.read_text(encoding="utf-8"))
+    runs = {}
+    for name, results in data["runs"].items():
+        example = parse_example(EXAMPLES / f"{name}.md")
+        for i, result in enumerate(results):
+            result["ref"] = example["refs"][i]
+            if result["ans"] is not None:
+                check(result, example, i)
+        runs[name] = results
+    out = saved.with_suffix(".md")
+    out.write_text(report(runs, data["model"], data["glossary"]), encoding="utf-8")
+    return out
 
 
 def cost_usd(stats: dict) -> float:
@@ -256,6 +282,14 @@ def selftest() -> int:
     rebuilt = results[3]["notes"] == ["rebuild"] and results[3]["section3"][-1]["rebuilt"]
     ok &= rebuilt
     print(f"{'ok ' if rebuilt else 'BAD'} piece 4: rebuild counted and applied to section 3, not failed")
+    ref = {"gloss": [("EE E", "[...] fragments")]}
+    marks_ok = not guessed_unreadable({"gloss": [{"token": "EE E", "meaning": "[dits]"}]}, ref) \
+        and guessed_unreadable({"gloss": [{"token": "EE E", "meaning": "the letter E"}]}, ref) == ["EE E"]
+    alternatives_ok = not invented_call_signs({"message": "garbled (?) OM3CPF/OM3CNF"}, "UOM3CNF OM3CPF") \
+        and invented_call_signs({"message": "UW3WU or UR3WU"}, "UW3WU") == ["UR3WU"]
+    ok &= marks_ok and alternatives_ok
+    print(f"{'ok ' if marks_ok else 'BAD'} a bracketed mark counts as doubt; a plain reading of an unreadable token fails")
+    print(f"{'ok ' if alternatives_ok else 'BAD'} slash alternatives are two call signs; an unmarked new one fails")
     text = report({"selftest": results}, "canned", "hints")
     has_rows = "OK7XYZ" in text and "Reference message" in text
     ok &= has_rows
@@ -273,9 +307,14 @@ def main() -> int:
     ap.add_argument("--live", action="store_true", help="call the model for real (paid)")
     ap.add_argument("--selftest", action="store_true", help="offline check of the loop with canned answers")
     ap.add_argument("--timeout", type=float, default=30.0)
+    ap.add_argument("--rescore", help="a saved run (.json under poc/eval/): re-run the checks, no model call")
     args = ap.parse_args()
     if args.selftest:
         return selftest()
+    if args.rescore:
+        out = rescore(pathlib.Path(args.rescore))
+        print(f"report: {out}", file=sys.stderr)
+        return 0
     if not args.live:
         print("no --live: refusing to call the model (a paid call). Use --selftest for the offline check.",
               file=sys.stderr)
@@ -300,6 +339,9 @@ def main() -> int:
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d-%H%M")
     out = REPORTS / f"{stamp}-{args.model}-{args.glossary}.md"
     out.write_text(report(runs, args.model, args.glossary), encoding="utf-8")
+    out.with_suffix(".json").write_text(json.dumps(
+        {"model": args.model, "glossary": args.glossary, "runs": runs}, ensure_ascii=False, indent=1),
+        encoding="utf-8")
     print(f"report: {out.relative_to(ROOT)}", file=sys.stderr)
     return 0
 

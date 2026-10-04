@@ -84,14 +84,14 @@ E I B8 H B[err]I
 | `OK 7DA/P` | OK7DA/P, Czechia, portable |
 | `DEDJ 0 YI` | DE DJ0YI: from DJ0YI (run together and split) |
 | `G T EIM [err]` | [...] unreadable (perhaps a greeting) |
-| `RST 5 5N 5 5N` | RST 5NN 5NN: signal report 599, sent twice (spurious splits) |
+| `RST 5 5N 5 5N` | RST 559, sent twice: 5-5-N with N = 9 (cut number); a spurious space each time |
 | `GK` | [...] probably BK (?), back to you |
 | `RRRTFE[err]` | R R…: roger, then unreadable (the weaker station's reply) |
 | `5T I95NN7[err]EEEEM E[err]` | [...] mostly unreadable; 5NN (599) inside it (?) |
 | `Q3EEE /E E 5GE N` | [...] unreadable |
 
 **Message:** OK7DA/P (portable, Czechia) answers; DJ0YI asks for it again, then replies: OK7DA/P from
-DJ0YI, [...] your report is 599 (sent twice), back to you (?). OK7DA/P's reply is weak: roger, [...] 599
+DJ0YI, [...] your report is 559 (sent twice), back to you (?). OK7DA/P's reply is weak: roger, [...] 599
 (?), the rest unreadable.
 
 ### Piece 5 · append
@@ -99,7 +99,7 @@ DJ0YI, [...] your report is 599 (sent twice), back to you (?). OK7DA/P's reply i
 | Token | Meaning |
 |---|---|
 | `H B 9?` | HB9? (?), perhaps a partial call sign being asked for; HB9 is a Swiss prefix |
-| `NDE<AS>` | [...] and <AS>, wait |
+| `NDE<AS>` | DE (from) after a fragment N (?), then <AS>, wait |
 | `B TR I G A` | [...] unreadable |
 | `K` | over |
 
@@ -115,7 +115,7 @@ DJ0YI, [...] your report is 599 (sent twice), back to you (?). OK7DA/P's reply i
 
 ## Reference — session tier
 
-The bar for **section 4**, drafted by Claude Opus 5.5 with `poc/explain_session.py` (2026-10-04, effort low) and lightly edited.
+The bar for **section 4**, drafted by Claude Opus 5.5 with `poc/explain_session.py` (2026-10-04, effort low) and lightly edited; the report corrected to 559 after the v0.2 eval run (SRUTI-007).
 
 > Вітаю, ви впіймали **активацію парку**: німецький радіоаматор DJ0YI працює з природоохоронної території і кличе всіх охочих. На його виклик відповідає принаймні одна станція, схоже чеська, і вони обмінюються рапортами. Сигнал місцями поганий, тому значна частина тексту рветься на уламки.
 >
@@ -127,7 +127,7 @@ The bar for **section 4**, drafted by Claude Opus 5.5 with `poc/explain_session.
 >
 > «Загальний виклик, активація парку, тут DJ0YI, прийом.»
 >
-> Далі йде найплутаніший шматок. Наскільки можна розібрати, хтось кличе як OK7DA/P. Позивний складається з уламків «OK7», «DA/P», «OK7DA/P», тому я не певен, що прочитав його правильно. Звучить «AGN», тобто прохання повторити. Потім: «...тут DJ0YI... рапорт 5NN, 5NN... прийняв, прийняв...». Решта цього фрагмента нечитабельна: [...].
+> Далі йде найплутаніший шматок. Наскільки можна розібрати, хтось кличе як OK7DA/P. Позивний складається з уламків «OK7», «DA/P», «OK7DA/P», тому я не певен, що прочитав його правильно. Звучить «AGN», тобто прохання повторити. Потім: «...тут DJ0YI... рапорт 559, 559... прийняв, прийняв...». Решта цього фрагмента нечитабельна: [...].
 >
 > «HB9? Тут... [...], прийом.» Схоже, DJ0YI питає швейцарську станцію, яка його кликала, але її позивний не прийнявся. Чи можна вважати уривок «TR I G A» частиною цього позивного, сказати неможливо.
 >
@@ -147,10 +147,11 @@ The bar for **section 4**, drafted by Claude Opus 5.5 with `poc/explain_session.
 >   - AGN означає «ще раз, повтори».
 >   - R (RRR) означає «прийняв».
 >   - RST — це рапорт про сигнал: розбірливість, сила, тон.
->   - 5NN — це «599», найкраща оцінка, записана скороченими цифрами (N означає 9).
+>   - 5 5N — це рапорт «559», записаний скороченими цифрами (N означає 9): розбірливість 5, сила 5, тон 9.
+>   - 5NN у відповіді слабшої станції — «599», найкраща оцінка.
 >   - Позначки на зразок <BT> та <AS> декодер ставить на службові знаки. Тут вони, найімовірніше, з'явилися через помилки розпізнавання, а не були передані навмисно.
 >
-> Тож це не неспішна бесіда, а швидка робота з природи: короткі виклики, рапорт 5NN і наступний кореспондент.
+> Тож це не неспішна бесіда, а швидка робота з природи: короткі виклики, рапорт і наступний кореспондент.
 
 ## What the decoder got wrong
 
@@ -160,7 +161,7 @@ The bar for **section 4**, drafted by Claude Opus 5.5 with `poc/explain_session.
 | `E DEQ` | `CQ` (?) | the general call, damaged |
 | `TTK7 DA/P`, `OK 7DA/P` | `OK7DA/P` | `TT` is `O` broken in two; a spurious space in the call |
 | `DEDJ 0 YI` | `DE DJ0YI` | run together, then split |
-| `RST 5 5N 5 5N` | `RST 5NN 5NN` | spurious spaces |
+| `RST 5 5N 5 5N` | `RST 55N 55N` = 559 | spurious spaces; not 5NN — N (-.) never decodes as 5 (.....) |
 | piece 4 tail, pieces 5–6 | — | the weaker station: mostly unreadable, must be marked, not guessed |
 
 ## Ambiguity a good answer keeps open
@@ -174,7 +175,7 @@ The bar for **section 4**, drafted by Claude Opus 5.5 with `poc/explain_session.
 ## The bar for a passing answer
 
 - Says what POTA is (Parks on the Air: DJ0YI operates from a park) and that it is a CQ call.
-- Copies DJ0YI and OK7DA/P exactly, explains `/P` (portable), `CQ`, `DE`, `K`, `AGN`, `RST`, `5NN` (599),
+- Copies DJ0YI and OK7DA/P exactly, explains `/P` (portable), `CQ`, `DE`, `K`, `AGN`, `RST`, the report 559 (`5 5N`, cut number N = 9) without turning it into 599,
   `<BT>`, `<AS>`.
 - Collapses the repeated CQ (piece 3 adds nothing new).
 - Marks the weak station's replies as unreadable instead of inventing them.

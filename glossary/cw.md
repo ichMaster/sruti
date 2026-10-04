@@ -83,7 +83,7 @@ as unknown, not guessed.
 - MSG — message
 - N — no / the digit 9 in cut numbers
 - NIL — nothing, nothing received
-- NR — number / near
+- NR — number / near; NR? = your (serial) number, please?
 - NW — now
 - OB — old boy
 - OC — old chap
@@ -108,7 +108,7 @@ as unknown, not guessed.
 - TKS / TNX — thanks
 - TMW — tomorrow
 - TRX / RTX — transceiver
-- TU — thank you
+- TU — thank you; in a contest it closes a contact ("TU E72U" = thanks, E72U is ready for the next caller)
 - TX — transmitter
 - U — you
 - UFB — ultra fine business: superb
@@ -134,6 +134,21 @@ as unknown, not guessed.
 - N — 9 (5NN = 599)
 - A — 1
 - E — 5 (rare)
+
+Cut numbers stand only where a report or a contest serial number stands (`T56` = 056, `4T6` = 406,
+`15T` = 150). A report is read as sent: `5 5N` (a spurious space) is 559, not 599. A lone letter between
+exchanges is a fragment of noise or of a weaker station, not a digit.
+
+## Contests and activations
+
+- TEST — a contest call: "CQ TEST" or "TEST <call>" = calling any station in a contest
+- Contest exchange: the running station sends `<call> 5NN <serial>`; the caller replies `TU 5NN <its serial>`
+  (sometimes with a club or region tag); `TU` ends the contact. Repeats of the call and of `TEST` carry
+  no new content.
+- CALL? — your call sign, please?
+- POTA — Parks on the Air: an "activator" operates from a park and calls "CQ POTA"; chasers answer
+- SOTA — Summits on the Air: the same, from a summit
+- /P after a call sign — portable
 
 ## Per-language CW habits
 

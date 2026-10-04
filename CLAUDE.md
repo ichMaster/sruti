@@ -159,8 +159,8 @@ Changing any of these updates ARCHITECTURE.md and the test that pins it, in the 
   connection is opened outward (receiver WebSocket, the Gemini API, the Claude API), and nothing in sruti
   listens on any port. sruti runs from the repo with `uv`; a packaged `.app` is not planned.
 - Public receivers have few slots; recordings exist so that development and tests don't occupy one.
-- Both tiers cost money: the piece tier ≈ $0.003 per piece (≈ $0.3 per hour of lively traffic, doubling
-  in 2027), the session tier ≈ $0.03 per Explain press. The costs are always visible, and no test or gate
+- Both tiers cost money: the piece tier ≈ $0.0026 per piece (≈ $0.26 per hour of lively traffic,
+  doubling in 2027; measured in v0.2), the session tier ≈ $0.03 per Explain press. The costs are always visible, and no test or gate
   ever calls a paid API.
 - `kiwiclient` has no license: only the v0.1 spike uses it, from an uncommitted checkout in `var/kiwiclient/`.
   The `receiver` module is sruti's own client; never vendor, copy or depend on `kiwiclient` in the product.

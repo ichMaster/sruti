@@ -17,10 +17,21 @@ are not listed: use your own knowledge for those, and for the operators' languag
 
 - Italian `ET` means "e" (and). Operators send ET because a lone E (one dot) is easily lost.
 - Italian `CAMBIO` means "over", I hand the turn back. `TI RIPASSO IL CAMBIO` = "back to you".
-- Cut numbers appear only in numbers and reports: T = 0, N = 9, A = 1 (`5NN` = 599, `5TT` = 500).
-  A T or E inside ordinary text is a letter, not a digit.
+- Cut numbers appear only in numbers, reports and contest serials: T = 0, N = 9, A = 1 (`5NN` = 599,
+  `5TT` = 500, `T56` = 056, `4T6` = 406). A T or E inside ordinary text is a letter, not a digit.
+- Read a report as sent: `5 5N` with a spurious space is 559, not 599. Only `5NN` is 599.
+- A lone letter between exchanges (`E`, `I`, `T`, `A`) is a fragment of noise or of a weaker station:
+  gloss it as a fragment, not as a word or a digit.
 - `ES`, `OM` and `YL` are prefixes only where a call sign stands. In running text they mean
   "and", "old man" and "young lady".
+
+## Contests and park activations
+
+- `TEST` is a contest call. A running station works callers fast: it sends `<call> 5NN <serial>`, the
+  caller replies `TU 5NN <its serial>`, and `TU <call>` or `TEST <call>` opens the next contact. The
+  repeats carry no new content.
+- `CQ POTA` is a park activation (Parks on the Air); `/P` after a call sign means portable.
+- `AGN` = again; `NR?` = your serial number?; `CALL?` = your call sign?
 
 ## Call signs
 
@@ -29,3 +40,5 @@ are not listed: use your own knowledge for those, and for the operators' languag
 - If you join split fragments into a call sign (`IU3 F E J` → IU3FEJ), mark it `(?)`.
 - Two call signs that differ by one Morse element may be one station decoded twice. Say so; do not
   merge them silently.
+- A damaged first copy of a call sign is usually read through a clean repeat nearby. Never offer a
+  call sign that does not appear in the text, not even as an alternative with a question mark.

@@ -1,0 +1,2408 @@
+{
+ "model": "gemini-3.8-flash",
+ "glossary": "full",
+ "runs": {
+  "001-italian-ragchew": [
+   {
+    "piece": "T E TTEAEANDE CAMBIO ANCHE IL RTX ET ACCENDO L' IC 7300",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "T E TTEAEANDE",
+       "[...] unreadable, decoder damage"
+      ],
+      [
+       "CAMBIO",
+       "(I) change"
+      ],
+      [
+       "ANCHE",
+       "also"
+      ],
+      [
+       "IL",
+       "the"
+      ],
+      [
+       "RTX",
+       "transceiver"
+      ],
+      [
+       "ET",
+       "and (Italian CW habit for \"e\")"
+      ],
+      [
+       "ACCENDO",
+       "(I) switch on"
+      ],
+      [
+       "L'",
+       "the"
+      ],
+      [
+       "IC 7300",
+       "IC-7300, an Icom transceiver"
+      ]
+     ],
+     "message": "[...] I'm also changing transceiver and switching on the IC-7300."
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "T",
+       "meaning": "[...]"
+      },
+      {
+       "token": "E",
+       "meaning": "[...]"
+      },
+      {
+       "token": "TTEAEANDE",
+       "meaning": "TTEAEANDE (?)"
+      },
+      {
+       "token": "CAMBIO",
+       "meaning": "over / change (Italian)"
+      },
+      {
+       "token": "ANCHE",
+       "meaning": "also (Italian)"
+      },
+      {
+       "token": "IL",
+       "meaning": "the (Italian)"
+      },
+      {
+       "token": "RTX",
+       "meaning": "transceiver"
+      },
+      {
+       "token": "ET",
+       "meaning": "and (Italian)"
+      },
+      {
+       "token": "ACCENDO",
+       "meaning": "I switch on (Italian)"
+      },
+      {
+       "token": "L'",
+       "meaning": "the (Italian)"
+      },
+      {
+       "token": "IC",
+       "meaning": "IC (? / Icom)"
+      },
+      {
+       "token": "7300",
+       "meaning": "7300"
+      }
+     ],
+     "action": "append",
+     "message": "[...] I also change the transceiver and switch on the IC-7300",
+     "rebuilt": null
+    },
+    "seconds": 2.288815500214696,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2621,
+     "out_tokens": 352,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "[...] I also change the transceiver and switch on the IC-7300",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": " ALESORA TI RIP ASS O IL CAMB IO  IU3 F E JDE IZ4PHG  HW K R QSO DE IU2PEJ GRAZIE PER LE INFTA EIO ORSE NON UAI CFE NON [err]T ANTO CH",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "ALESORA",
+       "so, then (ALLORA, reconstructed)"
+      ],
+      [
+       "TI",
+       "to you"
+      ],
+      [
+       "RIP ASS O",
+       "I pass back (RIPASSO, split by the decoder)"
+      ],
+      [
+       "IL",
+       "the"
+      ],
+      [
+       "CAMB IO",
+       "turn, \"over\" (CAMBIO, split); TI RIPASSO IL CAMBIO = back to you"
+      ],
+      [
+       "IU3 F E J",
+       "IU3FEJ (?), a call sign joined from fragments, Italy, region 3"
+      ],
+      [
+       "DE",
+       "from (run into the call sign as `JDE`)"
+      ],
+      [
+       "IZ4PHG",
+       "call sign IZ4PHG, Italy, region 4 (Emilia-Romagna)"
+      ],
+      [
+       "HW",
+       "how (do you copy)?"
+      ],
+      [
+       "K",
+       "over"
+      ],
+      [
+       "R",
+       "roger, received"
+      ],
+      [
+       "QSO",
+       "the contact"
+      ],
+      [
+       "DE",
+       "from"
+      ],
+      [
+       "IU2PEJ",
+       "call sign IU2PEJ, Italy, region 2 (Lombardy)"
+      ],
+      [
+       "GRAZIE",
+       "thanks"
+      ],
+      [
+       "PER LE",
+       "for the"
+      ],
+      [
+       "INFTA",
+       "info (INFO, reconstructed)"
+      ],
+      [
+       "EIO",
+       "and I (?) (E IO, uncertain)"
+      ],
+      [
+       "ORSE",
+       "maybe (FORSE, first letter lost)"
+      ],
+      [
+       "NON",
+       "not"
+      ],
+      [
+       "UAI",
+       "you know (SAI, S/U confused)"
+      ],
+      [
+       "CFE",
+       "that (CHE, H/F confused)"
+      ],
+      [
+       "NON",
+       "not"
+      ],
+      [
+       "[err]T ANTO",
+       "it is (so) long (È TANTO: È has no Morse code; TANTO split)"
+      ],
+      [
+       "CH",
+       "that… (CHE, cut off; continues in the next piece)"
+      ]
+     ],
+     "message": "So, back to you, IU3FEJ (?), from IZ4PHG: how do you copy? Over. Roger — the QSO, from IU2PEJ: thanks for the info. Maybe you don't know that it hasn't been long that [...]"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "ALESORA",
+       "meaning": "[...] (possibly allora / now?)"
+      },
+      {
+       "token": "TI",
+       "meaning": "to you"
+      },
+      {
+       "token": "RIP ASS O",
+       "meaning": "ripasso (I pass back)"
+      },
+      {
+       "token": "IL",
+       "meaning": "the"
+      },
+      {
+       "token": "CAMB IO",
+       "meaning": "cambio (over, turn)"
+      },
+      {
+       "token": "IU3 F E JDE",
+       "meaning": "IU3FEJ (?) de (from)"
+      },
+      {
+       "token": "IZ4PHG",
+       "meaning": "call sign IZ4PHG"
+      },
+      {
+       "token": "HW",
+       "meaning": "how (copy?)"
+      },
+      {
+       "token": "K",
+       "meaning": "over"
+      },
+      {
+       "token": "R",
+       "meaning": "roger, received"
+      },
+      {
+       "token": "QSO",
+       "meaning": "contact"
+      },
+      {
+       "token": "DE",
+       "meaning": "from"
+      },
+      {
+       "token": "IU2PEJ",
+       "meaning": "call sign IU2PEJ"
+      },
+      {
+       "token": "GRAZIE",
+       "meaning": "thanks"
+      },
+      {
+       "token": "PER",
+       "meaning": "for"
+      },
+      {
+       "token": "LE",
+       "meaning": "the"
+      },
+      {
+       "token": "INFTA",
+       "meaning": "info (?)"
+      },
+      {
+       "token": "EIO",
+       "meaning": "[?]"
+      },
+      {
+       "token": "ORSE",
+       "meaning": "forse (maybe?)"
+      },
+      {
+       "token": "NON",
+       "meaning": "not"
+      },
+      {
+       "token": "UAI",
+       "meaning": "vai (?)"
+      },
+      {
+       "token": "CFE",
+       "meaning": "che (?)"
+      },
+      {
+       "token": "NON",
+       "meaning": "not"
+      },
+      {
+       "token": "[err]T",
+       "meaning": "[...]"
+      },
+      {
+       "token": "ANTO",
+       "meaning": "tanto (?)"
+      },
+      {
+       "token": "CH",
+       "meaning": "[...]"
+      }
+     ],
+     "action": "append",
+     "message": "Now I pass the turn back to you, IU3FEJ de IZ4PHG, how copy? Over. Received contact, from IU2PEJ: thanks for the info [...].",
+     "rebuilt": null
+    },
+    "seconds": 2.627573541831225,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2686,
+     "out_tokens": 521,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "[...] I also change the transceiver and switch on the IC-7300",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "Now I pass the turn back to you, IU3FEJ de IZ4PHG, how copy? Over. Received contact, from IU2PEJ: thanks for the info [...].",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "E FACCIO CW MA IL MIO MAESTRO [err]L INO CIRCA 7 ANNI HO COMOS[err]IUNO IL GRANDE LINO ET LUI MI HA PRESO SOT T O LA SUA AAEA ET PE R",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "E",
+       "(the end of CHE from the previous piece) that"
+      ],
+      [
+       "FACCIO",
+       "I do"
+      ],
+      [
+       "CW",
+       "CW, Morse telegraphy"
+      ],
+      [
+       "MA",
+       "but"
+      ],
+      [
+       "IL MIO",
+       "my"
+      ],
+      [
+       "MAESTRO",
+       "teacher"
+      ],
+      [
+       "[err]L INO",
+       "is Lino (È LINO: È has no Morse code; LINO split)"
+      ],
+      [
+       "CIRCA",
+       "about"
+      ],
+      [
+       "7",
+       "7"
+      ],
+      [
+       "ANNI",
+       "years"
+      ],
+      [
+       "HO",
+       "I have"
+      ],
+      [
+       "COMOS[err]IUNO",
+       "met (CONOSCIUTO, reconstructed)"
+      ],
+      [
+       "IL GRANDE",
+       "the great"
+      ],
+      [
+       "LINO",
+       "Lino, a name"
+      ],
+      [
+       "ET",
+       "and"
+      ],
+      [
+       "LUI",
+       "he"
+      ],
+      [
+       "MI HA PRESO",
+       "took me"
+      ],
+      [
+       "SOT T O",
+       "under (SOTTO, split)"
+      ],
+      [
+       "LA SUA",
+       "his"
+      ],
+      [
+       "AAEA",
+       "wing (ALA, reconstructed)"
+      ],
+      [
+       "ET",
+       "and"
+      ],
+      [
+       "PE R",
+       "for (PER, split; cut off)"
+      ]
+     ],
+     "message": "[...that] I've been doing CW, but my teacher is Lino. About seven years ago I met the great Lino, and he took me under his wing and for [...]"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "E",
+       "meaning": "and (Italian)"
+      },
+      {
+       "token": "FACCIO",
+       "meaning": "I do (Italian)"
+      },
+      {
+       "token": "CW",
+       "meaning": "Morse telegraphy"
+      },
+      {
+       "token": "MA",
+       "meaning": "but (Italian)"
+      },
+      {
+       "token": "IL",
+       "meaning": "the (Italian)"
+      },
+      {
+       "token": "MIO",
+       "meaning": "my (Italian)"
+      },
+      {
+       "token": "MAESTRO",
+       "meaning": "teacher / master (Italian)"
+      },
+      {
+       "token": "[err]L",
+       "meaning": "[error] L"
+      },
+      {
+       "token": "INO",
+       "meaning": "-ino (?)"
+      },
+      {
+       "token": "CIRCA",
+       "meaning": "about / roughly (Italian)"
+      },
+      {
+       "token": "7",
+       "meaning": "7"
+      },
+      {
+       "token": "ANNI",
+       "meaning": "years (Italian)"
+      },
+      {
+       "token": "HO",
+       "meaning": "I have (Italian)"
+      },
+      {
+       "token": "COMOS[err]IUNO",
+       "meaning": "known (conosciuto, Italian, distorted)"
+      },
+      {
+       "token": "IL",
+       "meaning": "the (Italian)"
+      },
+      {
+       "token": "GRANDE",
+       "meaning": "great (Italian)"
+      },
+      {
+       "token": "LINO",
+       "meaning": "Lino (name)"
+      },
+      {
+       "token": "ET",
+       "meaning": "and (Italian habit)"
+      },
+      {
+       "token": "LUI",
+       "meaning": "he (Italian)"
+      },
+      {
+       "token": "MI",
+       "meaning": "me (Italian)"
+      },
+      {
+       "token": "HA",
+       "meaning": "has (Italian)"
+      },
+      {
+       "token": "PRESO",
+       "meaning": "taken (Italian)"
+      },
+      {
+       "token": "SOT",
+       "meaning": "un- (sotto, Italian, split)"
+      },
+      {
+       "token": "T",
+       "meaning": "-der (sotto, Italian, split)"
+      },
+      {
+       "token": "O",
+       "meaning": "Italian letter fragment"
+      },
+      {
+       "token": "LA",
+       "meaning": "the (Italian)"
+      },
+      {
+       "token": "SUA",
+       "meaning": "his (Italian)"
+      },
+      {
+       "token": "AAEA",
+       "meaning": "wing (ala, distorted) (?)"
+      },
+      {
+       "token": "ET",
+       "meaning": "and (Italian habit)"
+      },
+      {
+       "token": "PE",
+       "meaning": "fo- (per, Italian, split)"
+      },
+      {
+       "token": "R",
+       "meaning": "-r (per, Italian, split)"
+      }
+     ],
+     "action": "append",
+     "message": "And I do CW, but my teacher [Lino]—about 7 years ago I met the great Lino, and he took me under his wing, and for...",
+     "rebuilt": null
+    },
+    "seconds": 3.0126496250741184,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2784,
+     "out_tokens": 650,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "[...] I also change the transceiver and switch on the IC-7300",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "Now I pass the turn back to you, IU3FEJ de IZ4PHG, how copy? Over. Received contact, from IU2PEJ: thanks for the info [...].",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "And I do CW, but my teacher [Lino]—about 7 years ago I met the great Lino, and he took me under his wing, and for...",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   }
+  ],
+  "002-pota-dj0yi": [
+   {
+    "piece": "IEPOTA K",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "IEPOTA",
+       "[...] POTA: the tail of a call (the recording starts mid-call); POTA = Parks on the Air"
+      ],
+      [
+       "K",
+       "over"
+      ]
+     ],
+     "message": "[...] POTA (Parks on the Air). Over."
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "IEPOTA",
+       "meaning": "IEPOTA (?)"
+      },
+      {
+       "token": "K",
+       "meaning": "over; any station may reply"
+      }
+     ],
+     "action": "append",
+     "message": "IEPOTA (?), over",
+     "rebuilt": null
+    },
+    "seconds": 1.7063693339005113,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2602,
+     "out_tokens": 94,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "IEPOTA (?), over",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "CQ POTA DE DP 0YE DJ0YI POTA K",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "CQ",
+       "general call, any station"
+      ],
+      [
+       "POTA",
+       "Parks on the Air: the caller operates from a park and wants park contacts"
+      ],
+      [
+       "DE",
+       "from"
+      ],
+      [
+       "DP 0YE",
+       "the caller's call sign, damaged on its first sending (?), probably DJ0YI, as the repeat shows"
+      ],
+      [
+       "DJ0YI",
+       "call sign DJ0YI, Germany"
+      ],
+      [
+       "POTA",
+       "Parks on the Air"
+      ],
+      [
+       "K",
+       "over"
+      ]
+     ],
+     "message": "General call from DJ0YI, activating a park for Parks on the Air (POTA). Over."
+    },
+    "failures": [],
+    "notes": [
+     "rebuild"
+    ],
+    "ans": {
+     "gloss": [
+      {
+       "token": "CQ",
+       "meaning": "general call: anyone, come in"
+      },
+      {
+       "token": "POTA",
+       "meaning": "Parks on the Air"
+      },
+      {
+       "token": "DE",
+       "meaning": "from (this is)"
+      },
+      {
+       "token": "DP",
+       "meaning": "DP (?)"
+      },
+      {
+       "token": "0YE",
+       "meaning": "0YE (?)"
+      },
+      {
+       "token": "DJ0YI",
+       "meaning": "call sign DJ0YI"
+      },
+      {
+       "token": "POTA",
+       "meaning": "Parks on the Air"
+      },
+      {
+       "token": "K",
+       "meaning": "over; any station may reply"
+      }
+     ],
+     "action": "rebuild",
+     "message": null,
+     "rebuilt": [
+      "Calling CQ POTA, from DJ0YI (Parks on the Air), over"
+     ]
+    },
+    "seconds": 1.8080685422755778,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2615,
+     "out_tokens": 269,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "Calling CQ POTA, from DJ0YI (Parks on the Air), over",
+      "repeats": 1,
+      "rebuilt": true
+     }
+    ]
+   },
+   {
+    "piece": "E DEQ POTA DE DJ0YI DJ0YI POTA K",
+    "ref": {
+     "action": "none",
+     "gloss": [
+      [
+       "E DEQ",
+       "CQ (?), the general call, damaged"
+      ],
+      [
+       "POTA",
+       "Parks on the Air"
+      ],
+      [
+       "DE",
+       "from"
+      ],
+      [
+       "DJ0YI",
+       "call sign DJ0YI, Germany"
+      ],
+      [
+       "DJ0YI",
+       "(repeated)"
+      ],
+      [
+       "POTA",
+       "Parks on the Air"
+      ],
+      [
+       "K",
+       "over"
+      ]
+     ],
+     "message": "— (the same POTA call again: section 3 counts a repeat)"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "E",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "DEQ",
+       "meaning": "DE (?) / Q (?)"
+      },
+      {
+       "token": "POTA",
+       "meaning": "Parks on the Air"
+      },
+      {
+       "token": "DE",
+       "meaning": "from"
+      },
+      {
+       "token": "DJ0YI",
+       "meaning": "DJ0YI"
+      },
+      {
+       "token": "DJ0YI",
+       "meaning": "DJ0YI"
+      },
+      {
+       "token": "POTA",
+       "meaning": "Parks on the Air"
+      },
+      {
+       "token": "K",
+       "meaning": "over"
+      }
+     ],
+     "action": "none",
+     "message": null,
+     "rebuilt": null
+    },
+    "seconds": 1.7464352077804506,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2646,
+     "out_tokens": 173,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "Calling CQ POTA, from DJ0YI (Parks on the Air), over",
+      "repeats": 2,
+      "rebuilt": true
+     }
+    ]
+   },
+   {
+    "piece": "TTK7 DA/P AGN DE O NI 7 <BT>[err] OK7 <BT>[err] OKTS EEOK7DE EIDAXP OK 7DA/P DEDJ 0 YI G T EIM [err] RST 5 5N 5 5N GK RRRTFE[err] 5T I95NN7[err]EEEEM E[err] Q3EEE /E E 5GE N",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "TTK7 DA/P",
+       "OK7DA/P (?), a station answering, damaged: OK7DA/P is Czechia, `/P` = portable"
+      ],
+      [
+       "AGN",
+       "again (please repeat)"
+      ],
+      [
+       "DE",
+       "from"
+      ],
+      [
+       "O NI 7",
+       "[...] damaged, possibly OK7 (?)"
+      ],
+      [
+       "<BT>[err]",
+       "<BT> break (a pause in the text) and an unknown code"
+      ],
+      [
+       "OK7",
+       "OK7…, the start of the answering call sign"
+      ],
+      [
+       "<BT>[err]",
+       "break and an unknown code"
+      ],
+      [
+       "OKTS EEOK7DE EIDAXP",
+       "[...] damaged repeats of the answering call sign (?)"
+      ],
+      [
+       "OK 7DA/P",
+       "OK7DA/P, Czechia, portable"
+      ],
+      [
+       "DEDJ 0 YI",
+       "DE DJ0YI: from DJ0YI (run together and split)"
+      ],
+      [
+       "G T EIM [err]",
+       "[...] unreadable (perhaps a greeting)"
+      ],
+      [
+       "RST 5 5N 5 5N",
+       "RST 559, sent twice: 5-5-N with N = 9 (cut number); a spurious space each time"
+      ],
+      [
+       "GK",
+       "[...] probably BK (?), back to you"
+      ],
+      [
+       "RRRTFE[err]",
+       "R R…: roger, then unreadable (the weaker station's reply)"
+      ],
+      [
+       "5T I95NN7[err]EEEEM E[err]",
+       "[...] mostly unreadable; 5NN (599) inside it (?)"
+      ],
+      [
+       "Q3EEE /E E 5GE N",
+       "[...] unreadable"
+      ]
+     ],
+     "message": "OK7DA/P (portable, Czechia) answers; DJ0YI asks for it again, then replies: OK7DA/P from DJ0YI, [...] your report is 559 (sent twice), back to you (?). OK7DA/P's reply is weak: roger, [...] 599 (?), the rest unreadable."
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "TTK7",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "DA/P",
+       "meaning": "call sign DA/P (?)"
+      },
+      {
+       "token": "AGN",
+       "meaning": "again"
+      },
+      {
+       "token": "DE",
+       "meaning": "from"
+      },
+      {
+       "token": "O",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "NI",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "7",
+       "meaning": "7"
+      },
+      {
+       "token": "<BT>",
+       "meaning": "[pause/separator]"
+      },
+      {
+       "token": "[err]",
+       "meaning": "[error]"
+      },
+      {
+       "token": "OK7",
+       "meaning": "OK7 (?)"
+      },
+      {
+       "token": "<BT>",
+       "meaning": "[pause/separator]"
+      },
+      {
+       "token": "[err]",
+       "meaning": "[error]"
+      },
+      {
+       "token": "OKTS",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "EEOK7DE",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "EIDAXP",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "OK",
+       "meaning": "all correct"
+      },
+      {
+       "token": "7DA/P",
+       "meaning": "call sign OK7DA/P (?)"
+      },
+      {
+       "token": "DEDJ",
+       "meaning": "from DJ"
+      },
+      {
+       "token": "0",
+       "meaning": "0"
+      },
+      {
+       "token": "YI",
+       "meaning": "YI"
+      },
+      {
+       "token": "G",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "T",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "EIM",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "[err]",
+       "meaning": "[error]"
+      },
+      {
+       "token": "RST",
+       "meaning": "signal report"
+      },
+      {
+       "token": "5",
+       "meaning": "5"
+      },
+      {
+       "token": "5N",
+       "meaning": "59 (cut number N = 9)"
+      },
+      {
+       "token": "5",
+       "meaning": "5"
+      },
+      {
+       "token": "5N",
+       "meaning": "59 (cut number N = 9)"
+      },
+      {
+       "token": "GK",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "RRRTFE[err]",
+       "meaning": "[...] [error]"
+      },
+      {
+       "token": "5T",
+       "meaning": "50 (cut number T = 0)"
+      },
+      {
+       "token": "I95NN7[err]EEEEM",
+       "meaning": "[...] [error]"
+      },
+      {
+       "token": "E[err]",
+       "meaning": "[error]"
+      },
+      {
+       "token": "Q3EEE",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "/E",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "E",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "5GE",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "N",
+       "meaning": "[...] (?)"
+      }
+     ],
+     "action": "append",
+     "message": "OK7DA/P again from DJ0YI, your signal report is 559",
+     "rebuilt": null
+    },
+    "seconds": 3.650416749995202,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2748,
+     "out_tokens": 736,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "Calling CQ POTA, from DJ0YI (Parks on the Air), over",
+      "repeats": 2,
+      "rebuilt": true
+     },
+     {
+      "text": "OK7DA/P again from DJ0YI, your signal report is 559",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "H B 9? NDE<AS> B TR I G A K",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "H B 9?",
+       "HB9? (?), perhaps a partial call sign being asked for; HB9 is a Swiss prefix"
+      ],
+      [
+       "NDE<AS>",
+       "[...] and <AS>, wait"
+      ],
+      [
+       "B TR I G A",
+       "[...] unreadable"
+      ],
+      [
+       "K",
+       "over"
+      ]
+     ],
+     "message": "[...] possibly asking a station starting HB9 (Switzerland) to repeat (?) [...] Over."
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "H",
+       "meaning": "H (?)"
+      },
+      {
+       "token": "B",
+       "meaning": "B (?)"
+      },
+      {
+       "token": "9?",
+       "meaning": "9? (querying call sign HB9?)"
+      },
+      {
+       "token": "NDE<AS>",
+       "meaning": "N (?) DE (from) <AS> (wait)"
+      },
+      {
+       "token": "B",
+       "meaning": "B (?)"
+      },
+      {
+       "token": "TR",
+       "meaning": "TR (?)"
+      },
+      {
+       "token": "I",
+       "meaning": "I (?)"
+      },
+      {
+       "token": "G",
+       "meaning": "G (?)"
+      },
+      {
+       "token": "A",
+       "meaning": "A (?)"
+      },
+      {
+       "token": "K",
+       "meaning": "over"
+      }
+     ],
+     "action": "append",
+     "message": "HB9?, [...] over",
+     "rebuilt": null
+    },
+    "seconds": 4.559057500213385,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2789,
+     "out_tokens": 216,
+     "thought_tokens": 700
+    },
+    "section3": [
+     {
+      "text": "Calling CQ POTA, from DJ0YI (Parks on the Air), over",
+      "repeats": 2,
+      "rebuilt": true
+     },
+     {
+      "text": "OK7DA/P again from DJ0YI, your signal report is 559",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "HB9?, [...] over",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "E I B8 H B[err]I",
+    "ref": {
+     "action": "none",
+     "gloss": [
+      [
+       "E I B8 H B[err]I",
+       "[...] unreadable; the recording ends"
+      ]
+     ],
+     "message": "— (nothing readable)"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "E",
+       "meaning": "[...]"
+      },
+      {
+       "token": "I",
+       "meaning": "[...]"
+      },
+      {
+       "token": "B8",
+       "meaning": "B8 (?)"
+      },
+      {
+       "token": "H",
+       "meaning": "[...]"
+      },
+      {
+       "token": "B[err]I",
+       "meaning": "[err]"
+      }
+     ],
+     "action": "none",
+     "message": null,
+     "rebuilt": null
+    },
+    "seconds": 1.5642157499678433,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2809,
+     "out_tokens": 113,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "Calling CQ POTA, from DJ0YI (Parks on the Air), over",
+      "repeats": 2,
+      "rebuilt": true
+     },
+     {
+      "text": "OK7DA/P again from DJ0YI, your signal report is 559",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "HB9?, [...] over",
+      "repeats": 2,
+      "rebuilt": false
+     }
+    ]
+   }
+  ],
+  "003-contest-e72u": [
+   {
+    "piece": "IUU E72U EETE I[err] T F6FTI 5NN T56 INA I E [err]E",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "IUU",
+       "[...] damaged, probably TU (?), thanks, closing the previous contact"
+      ],
+      [
+       "E72U",
+       "call sign E72U, Bosnia and Herzegovina, the running station"
+      ],
+      [
+       "EETE I[err] T",
+       "[...] unreadable, a weak caller"
+      ],
+      [
+       "F6FTI",
+       "call sign F6FTI, France"
+      ],
+      [
+       "5NN",
+       "599, signal report"
+      ],
+      [
+       "T56",
+       "056, E72U's serial number (`T` = 0)"
+      ],
+      [
+       "INA I E [err]E",
+       "[...] unreadable, F6FTI's reply"
+      ]
+     ],
+     "message": "E72U, running in the contest: F6FTI, you're 599, number 056. F6FTI's reply is unreadable."
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "IUU",
+       "meaning": "IUU (?)"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "EETE",
+       "meaning": "unrecognized (?)"
+      },
+      {
+       "token": "I[err]",
+       "meaning": "[...]"
+      },
+      {
+       "token": "T",
+       "meaning": "unrecognized (?)"
+      },
+      {
+       "token": "F6FTI",
+       "meaning": "call sign F6FTI"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599 (signal report)"
+      },
+      {
+       "token": "T56",
+       "meaning": "056 (contest serial)"
+      },
+      {
+       "token": "INA",
+       "meaning": "unrecognized (?)"
+      },
+      {
+       "token": "I",
+       "meaning": "unrecognized (?)"
+      },
+      {
+       "token": "E",
+       "meaning": "unrecognized (?)"
+      },
+      {
+       "token": "[err]E",
+       "meaning": "[...]"
+      }
+     ],
+     "action": "append",
+     "message": "F6FTI gives contest exchange 599 056 (amid fragments involving E72U and IUU)",
+     "rebuilt": null
+    },
+    "seconds": 3.6555687091313303,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2629,
+     "out_tokens": 283,
+     "thought_tokens": 451
+    },
+    "section3": [
+     {
+      "text": "F6FTI gives contest exchange 599 056 (amid fragments involving E72U and IUU)",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "TD I E EI EB NR E E[err]",
+    "ref": {
+     "action": "none",
+     "gloss": [
+      [
+       "TD I E EI EB",
+       "[...] unreadable"
+      ],
+      [
+       "NR",
+       "number (?), perhaps asking for a serial again"
+      ],
+      [
+       "E E[err]",
+       "[...] unreadable"
+      ]
+     ],
+     "message": "— (unreadable; nothing certain to add)"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "TD",
+       "meaning": "TD (?)"
+      },
+      {
+       "token": "I",
+       "meaning": "I (?)"
+      },
+      {
+       "token": "E",
+       "meaning": "E (?)"
+      },
+      {
+       "token": "EI",
+       "meaning": "EI (?)"
+      },
+      {
+       "token": "EB",
+       "meaning": "EB (?)"
+      },
+      {
+       "token": "NR",
+       "meaning": "number"
+      },
+      {
+       "token": "E",
+       "meaning": "E (?)"
+      },
+      {
+       "token": "E[err]",
+       "meaning": "[...]"
+      }
+     ],
+     "action": "none",
+     "message": null,
+     "rebuilt": null
+    },
+    "seconds": 1.6405197503045201,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2661,
+     "out_tokens": 218,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "F6FTI gives contest exchange 599 056 (amid fragments involving E72U and IUU)",
+      "repeats": 2,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "IE IE I F CALL? T EEEIE",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "IE IE I F",
+       "[...] unreadable"
+      ],
+      [
+       "CALL?",
+       "call? (your call sign, please)"
+      ],
+      [
+       "T EEEIE",
+       "[...] unreadable"
+      ]
+     ],
+     "message": "[...] Call sign, please? (someone asks a caller to repeat its call) [...]"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "IE",
+       "meaning": "[...]"
+      },
+      {
+       "token": "IE",
+       "meaning": "[...]"
+      },
+      {
+       "token": "I",
+       "meaning": "[...]"
+      },
+      {
+       "token": "F",
+       "meaning": "[...]"
+      },
+      {
+       "token": "CALL?",
+       "meaning": "your call sign, please?"
+      },
+      {
+       "token": "T",
+       "meaning": "[...]"
+      },
+      {
+       "token": "EEEIE",
+       "meaning": "[...]"
+      }
+     ],
+     "action": "append",
+     "message": "Asks for call sign (\"CALL?\") amid fragments",
+     "rebuilt": null
+    },
+    "seconds": 2.0063818749040365,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2673,
+     "out_tokens": 205,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "F6FTI gives contest exchange 599 056 (amid fragments involving E72U and IUU)",
+      "repeats": 2,
+      "rebuilt": false
+     },
+     {
+      "text": "Asks for call sign (\"CALL?\") amid fragments",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "EE E E TU E72U SP1AE N SP1AE N DP1AEN 5NN T57 TU 5NN6 16 TRC TU[err]2U YL2TD YL2TD 5NN T58 ? E YL2TD 5NN T58 TU 5NN 485 TRC TU E72U I TEST E72U E72U TEST E72U E72U [err]Z3ZZ E I ZZ E LZ3ZZ LZ3ZZ 5NN",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "EE E E",
+       "[...] fragments"
+      ],
+      [
+       "TU",
+       "thanks (closing the previous contact)"
+      ],
+      [
+       "E72U",
+       "E72U"
+      ],
+      [
+       "SP1AE N",
+       "SP1AEN, Poland, calling (split)"
+      ],
+      [
+       "SP1AE N",
+       "(repeated)"
+      ],
+      [
+       "DP1AEN",
+       "SP1AEN (?), E72U repeating the call, damaged (D/S)"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T57",
+       "057"
+      ],
+      [
+       "TU",
+       "thanks (SP1AEN replying)"
+      ],
+      [
+       "5NN6 16",
+       "599 616: SP1AEN's report and serial (run together and split)"
+      ],
+      [
+       "TRC",
+       "TRC, a tag closing the callers' exchange in this contest (?)"
+      ],
+      [
+       "TU[err]2U",
+       "TU E72U (damaged): thanks, E72U"
+      ],
+      [
+       "YL2TD",
+       "call sign YL2TD, Latvia, calling"
+      ],
+      [
+       "YL2TD",
+       "(repeated)"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T58",
+       "058"
+      ],
+      [
+       "?",
+       "a query (repeat?)"
+      ],
+      [
+       "E",
+       "[...] fragment"
+      ],
+      [
+       "YL2TD",
+       "YL2TD (E72U repeats)"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T58",
+       "058 (sent again)"
+      ],
+      [
+       "TU",
+       "thanks"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "485",
+       "485, YL2TD's serial"
+      ],
+      [
+       "TRC",
+       "TRC (?)"
+      ],
+      [
+       "TU",
+       "thanks"
+      ],
+      [
+       "E72U",
+       "E72U"
+      ],
+      [
+       "I",
+       "[...] fragment"
+      ],
+      [
+       "TEST",
+       "TEST: a contest CQ, calling any station"
+      ],
+      [
+       "E72U",
+       "E72U"
+      ],
+      [
+       "E72U",
+       "(repeated)"
+      ],
+      [
+       "TEST",
+       "TEST, contest CQ"
+      ],
+      [
+       "E72U",
+       "E72U"
+      ],
+      [
+       "E72U",
+       "(repeated)"
+      ],
+      [
+       "[err]Z3ZZ E I ZZ E",
+       "[...] damaged copies of the next caller's call sign (?)"
+      ],
+      [
+       "LZ3ZZ",
+       "call sign LZ3ZZ, Bulgaria, calling"
+      ],
+      [
+       "LZ3ZZ",
+       "(repeated)"
+      ],
+      [
+       "5NN",
+       "599 (the serial follows in the next piece)"
+      ]
+     ],
+     "message": "Thanks, E72U. SP1AEN calls; E72U: SP1AEN 599 057; SP1AEN: thanks, 599 616 TRC. YL2TD calls; E72U: YL2TD 599 058, sent again after a query; YL2TD: thanks, 599 485 TRC. E72U thanks him and calls TEST (a contest CQ) twice. LZ3ZZ calls; E72U: LZ3ZZ 599 …"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "EE E E",
+       "meaning": "[noise fragments]"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "SP1AE N",
+       "meaning": "call sign SP1AEN (with split)"
+      },
+      {
+       "token": "SP1AE N",
+       "meaning": "call sign SP1AEN (with split)"
+      },
+      {
+       "token": "DP1AEN",
+       "meaning": "call sign DP1AEN"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T57",
+       "meaning": "057"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "5NN6 16",
+       "meaning": "599 616 (or split serial)"
+      },
+      {
+       "token": "TRC",
+       "meaning": "TRC (?)"
+      },
+      {
+       "token": "TU[err]2U",
+       "meaning": "thank you [err]2U"
+      },
+      {
+       "token": "YL2TD",
+       "meaning": "call sign YL2TD"
+      },
+      {
+       "token": "YL2TD",
+       "meaning": "call sign YL2TD"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T58",
+       "meaning": "058"
+      },
+      {
+       "token": "?",
+       "meaning": "?"
+      },
+      {
+       "token": "E",
+       "meaning": "[noise]"
+      },
+      {
+       "token": "YL2TD",
+       "meaning": "call sign YL2TD"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T58",
+       "meaning": "058"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "485",
+       "meaning": "485"
+      },
+      {
+       "token": "TRC",
+       "meaning": "TRC (?)"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "I",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "TEST",
+       "meaning": "contest call"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "TEST",
+       "meaning": "contest call"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "[err]Z3ZZ",
+       "meaning": "[...]Z3ZZ"
+      },
+      {
+       "token": "E I ZZ E",
+       "meaning": "[noise fragments]"
+      },
+      {
+       "token": "LZ3ZZ",
+       "meaning": "call sign LZ3ZZ"
+      },
+      {
+       "token": "LZ3ZZ",
+       "meaning": "call sign LZ3ZZ"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      }
+     ],
+     "action": "append",
+     "message": "E72U exchanges with SP1AEN/DP1AEN (599 057, received 599 616 TRC) and YL2TD (599 058, received 599 485 TRC), then resumes calling TEST; LZ3ZZ answers with 599",
+     "rebuilt": null
+    },
+    "seconds": 2.9717079582624137,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 2809,
+     "out_tokens": 857,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "F6FTI gives contest exchange 599 056 (amid fragments involving E72U and IUU)",
+      "repeats": 2,
+      "rebuilt": false
+     },
+     {
+      "text": "Asks for call sign (\"CALL?\") amid fragments",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "E72U exchanges with SP1AEN/DP1AEN (599 057, received 599 616 TRC) and YL2TD (599 058, received 599 485 TRC), then resumes calling TEST; LZ3ZZ answers with 599",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "T59 5NN 391 TRC TU NMQSMGNF YO3GNF 5NN T60 A 5NN 1TU ETU E72U SOQU SP3VT E E SP3VT 5NN T61 TU 5NN 4T6 T TU O[err]KU R UOM3CNF 5NN T62 G M3CPF 5NNE281 E ETU EZ OM3CPF TU EE 4W3WU UW3WU 5NN T63 5NN 15T",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "T59",
+       "059, the serial for LZ3ZZ (its 599 ended the previous piece)"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "391",
+       "391, LZ3ZZ's serial"
+      ],
+      [
+       "TRC",
+       "TRC (?)"
+      ],
+      [
+       "TU",
+       "thanks"
+      ],
+      [
+       "NMQSMGNF",
+       "[...] a damaged copy of the next call sign, probably YO3GNF (?)"
+      ],
+      [
+       "YO3GNF",
+       "call sign YO3GNF, Romania"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T60",
+       "060"
+      ],
+      [
+       "A",
+       "[...] fragment"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "1TU",
+       "1… and TU (?): the start of YO3GNF's serial run into \"thanks\""
+      ],
+      [
+       "ETU",
+       "TU, thanks (with a stray E)"
+      ],
+      [
+       "E72U",
+       "E72U"
+      ],
+      [
+       "SOQU",
+       "[...] unreadable"
+      ],
+      [
+       "SP3VT",
+       "call sign SP3VT, Poland"
+      ],
+      [
+       "E E",
+       "[...] fragments"
+      ],
+      [
+       "SP3VT",
+       "SP3VT (E72U repeats)"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T61",
+       "061"
+      ],
+      [
+       "TU",
+       "thanks"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "4T6",
+       "406, SP3VT's serial (`T` = 0)"
+      ],
+      [
+       "T",
+       "[...] fragment"
+      ],
+      [
+       "TU",
+       "thanks"
+      ],
+      [
+       "O[err]KU R UOM3CNF",
+       "[...] damaged; probably the next caller, OM3CPF (?)"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T62",
+       "062"
+      ],
+      [
+       "G M3CPF",
+       "[...] OM3CPF (?), the first letter lost"
+      ],
+      [
+       "5NNE281",
+       "599 281 (?): OM3CPF's report and serial, run together with a stray E"
+      ],
+      [
+       "E ETU",
+       "TU, thanks (with stray letters)"
+      ],
+      [
+       "EZ",
+       "[...] fragment"
+      ],
+      [
+       "OM3CPF",
+       "call sign OM3CPF, Slovakia"
+      ],
+      [
+       "TU",
+       "thanks"
+      ],
+      [
+       "EE",
+       "[...] fragment"
+      ],
+      [
+       "4W3WU",
+       "a damaged copy of the next call sign: the repeat shows UW3WU (?) — not a 4W (Timor-Leste) station"
+      ],
+      [
+       "UW3WU",
+       "call sign UW3WU, Ukraine"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T63",
+       "063"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "15T",
+       "150, UW3WU's serial (`T` = 0)"
+      ]
+     ],
+     "message": "LZ3ZZ, 059; LZ3ZZ: 599 391 TRC. YO3GNF: 599 060; YO3GNF: 599 1… (rest lost), thanks. SP3VT: 599 061; SP3VT: 599 406. OM3CPF (?): 599 062; OM3CPF: 599 281 (?); thanks, OM3CPF. UW3WU: 599 063; UW3WU: 599 150."
+    },
+    "failures": [
+     "unreadable text glossed as certain: `A` `T`"
+    ],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "T59",
+       "meaning": "059 (serial)"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "391",
+       "meaning": "391 (serial)"
+      },
+      {
+       "token": "TRC",
+       "meaning": "TRC (?)"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "NMQSMGNF",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "YO3GNF",
+       "meaning": "YO3GNF"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T60",
+       "meaning": "060 (serial)"
+      },
+      {
+       "token": "A",
+       "meaning": "1 (cut number)"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "1TU",
+       "meaning": "1 thank you (?)"
+      },
+      {
+       "token": "ETU",
+       "meaning": "and thank you (?)"
+      },
+      {
+       "token": "E72U",
+       "meaning": "E72U"
+      },
+      {
+       "token": "SOQU",
+       "meaning": "[...] (?)"
+      },
+      {
+       "token": "SP3VT",
+       "meaning": "SP3VT"
+      },
+      {
+       "token": "E",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "E",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "SP3VT",
+       "meaning": "SP3VT"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T61",
+       "meaning": "061 (serial)"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "4T6",
+       "meaning": "406 (serial)"
+      },
+      {
+       "token": "T",
+       "meaning": "0 (cut number)"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "O[err]KU",
+       "meaning": "[...]"
+      },
+      {
+       "token": "R",
+       "meaning": "roger"
+      },
+      {
+       "token": "UOM3CNF",
+       "meaning": "OM3CPF / OM3CNF (?)"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T62",
+       "meaning": "062 (serial)"
+      },
+      {
+       "token": "G",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "M3CPF",
+       "meaning": "OM3CPF (?)"
+      },
+      {
+       "token": "5NNE281",
+       "meaning": "599 5281 (?)"
+      },
+      {
+       "token": "E",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "ETU",
+       "meaning": "and thank you (?)"
+      },
+      {
+       "token": "EZ",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "OM3CPF",
+       "meaning": "OM3CPF"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "EE",
+       "meaning": "[fragment]"
+      },
+      {
+       "token": "4W3WU",
+       "meaning": "4W3WU (?)"
+      },
+      {
+       "token": "UW3WU",
+       "meaning": "UW3WU"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T63",
+       "meaning": "063 (serial)"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "15T",
+       "meaning": "150 (serial)"
+      }
+     ],
+     "action": "append",
+     "message": "LZ3ZZ sends 599 391 TRC, E72U replies 059. E72U works YO3GNF (599 060), SP3VT (599 061, recvd 599 406), OM3CPF (599 062, recvd 599 5281?), and UW3WU (599 063, recvd 599 150)",
+     "rebuilt": null
+    },
+    "seconds": 3.781849583145231,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 3015,
+     "out_tokens": 990,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "F6FTI gives contest exchange 599 056 (amid fragments involving E72U and IUU)",
+      "repeats": 2,
+      "rebuilt": false
+     },
+     {
+      "text": "Asks for call sign (\"CALL?\") amid fragments",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "E72U exchanges with SP1AEN/DP1AEN (599 057, received 599 616 TRC) and YL2TD (599 058, received 599 485 TRC), then resumes calling TEST; LZ3ZZ answers with 599",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "LZ3ZZ sends 599 391 TRC, E72U replies 059. E72U works YO3GNF (599 060), SP3VT (599 061, recvd 599 406), OM3CPF (599 062, recvd 599 5281?), and UW3WU (599 063, recvd 599 150)",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   },
+   {
+    "piece": "E E TU E72U YO4TL YO4TL 5NN T64 M",
+    "ref": {
+     "action": "append",
+     "gloss": [
+      [
+       "E E",
+       "[...] fragments"
+      ],
+      [
+       "TU",
+       "thanks"
+      ],
+      [
+       "E72U",
+       "E72U"
+      ],
+      [
+       "YO4TL",
+       "call sign YO4TL, Romania, calling"
+      ],
+      [
+       "YO4TL",
+       "(repeated)"
+      ],
+      [
+       "5NN",
+       "599"
+      ],
+      [
+       "T64",
+       "064"
+      ],
+      [
+       "M",
+       "[...] fragment; the recording ends"
+      ]
+     ],
+     "message": "Thanks, E72U. YO4TL calls; E72U: YO4TL 599 064. (The recording ends.)"
+    },
+    "failures": [],
+    "notes": [],
+    "ans": {
+     "gloss": [
+      {
+       "token": "E",
+       "meaning": "[...]"
+      },
+      {
+       "token": "E",
+       "meaning": "[...]"
+      },
+      {
+       "token": "TU",
+       "meaning": "thank you"
+      },
+      {
+       "token": "E72U",
+       "meaning": "call sign E72U"
+      },
+      {
+       "token": "YO4TL",
+       "meaning": "call sign YO4TL"
+      },
+      {
+       "token": "YO4TL",
+       "meaning": "call sign YO4TL"
+      },
+      {
+       "token": "5NN",
+       "meaning": "599"
+      },
+      {
+       "token": "T64",
+       "meaning": "064"
+      },
+      {
+       "token": "M",
+       "meaning": "[...]"
+      }
+     ],
+     "action": "append",
+     "message": "Thank you, this is E72U. YO4TL, you are 599 serial 064.",
+     "rebuilt": null
+    },
+    "seconds": 1.913965417072177,
+    "stats": {
+     "provider": "gemini",
+     "prompt_tokens": 3154,
+     "out_tokens": 285,
+     "thought_tokens": 0
+    },
+    "section3": [
+     {
+      "text": "F6FTI gives contest exchange 599 056 (amid fragments involving E72U and IUU)",
+      "repeats": 2,
+      "rebuilt": false
+     },
+     {
+      "text": "Asks for call sign (\"CALL?\") amid fragments",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "E72U exchanges with SP1AEN/DP1AEN (599 057, received 599 616 TRC) and YL2TD (599 058, received 599 485 TRC), then resumes calling TEST; LZ3ZZ answers with 599",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "LZ3ZZ sends 599 391 TRC, E72U replies 059. E72U works YO3GNF (599 060), SP3VT (599 061, recvd 599 406), OM3CPF (599 062, recvd 599 5281?), and UW3WU (599 063, recvd 599 150)",
+      "repeats": 1,
+      "rebuilt": false
+     },
+     {
+      "text": "Thank you, this is E72U. YO4TL, you are 599 serial 064.",
+      "repeats": 1,
+      "rebuilt": false
+     }
+    ]
+   }
+  ]
+ }
+}
