@@ -209,10 +209,10 @@ def make_streams(args, capture: Capture, stop: threading.Event):
         def _next_scan_step(self):
             if time.time() - self.tuned_at < args.dwell:
                 return
-            self.scan_index += 1
-            if self.scan_index >= len(args.scan):
+            if self.scan_index + 1 >= len(args.scan):
                 stop.set()
                 return
+            self.scan_index += 1
             self.wav.close()
             self.wav = open_wav(scan_wav(args, self.scan_index))
             self.set_mod("cw", args.passband_hz[0], args.passband_hz[1], args.scan[self.scan_index])
