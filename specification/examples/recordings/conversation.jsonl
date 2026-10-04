@@ -32,9 +32,9 @@
 {"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG max_camp=4"}
 {"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG badp=0"}
 {"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG version_maj=1 version_min=902 debian_ver=11 model=2 platform=0 hw=1 ext_clk=0 freq_offset=0.000 abyy=A26 dx_db_name=dx has_attn=1"}
-{"t": 1791092890.156, "ws": "SND", "dir": "←", "msg": "MSG load_cfg=omitted:13"}
-{"t": 1791092890.37, "ws": "SND", "dir": "←", "msg": "MSG load_dxcfg=omitted:13"}
-{"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG load_dxcomm_cfg=omitted:13"}
+{"t": 1791092890.156, "ws": "SND", "dir": "←", "msg": "MSG load_cfg=omitted:20947"}
+{"t": 1791092890.37, "ws": "SND", "dir": "←", "msg": "MSG load_dxcfg=omitted:47387"}
+{"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG load_dxcomm_cfg=omitted:39756"}
 {"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG cfg_loaded"}
 {"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG center_freq=15000000 bandwidth=30000000 adc_clk_nom=66666600"}
 {"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG audio_init=0 audio_rate=12000"}

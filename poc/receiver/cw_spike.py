@@ -103,7 +103,7 @@ def sanitize(msg: str) -> str:
         name, eq, value = pair.partition("=")
         if name == "client_public_ip" and eq:
             pair = "client_public_ip=0.0.0.0"  # the owner's address, wherever the receiver puts it
-        elif name in CONFIG_BLOBS and eq:
+        elif name in CONFIG_BLOBS and eq and not value.startswith("omitted:"):
             pair = f"{name}=omitted:{len(value)}"
         pairs.append(pair)
     return "MSG " + " ".join(pairs)
@@ -115,6 +115,7 @@ def selftest() -> int:
         ("MSG client_public_ip=203.0.113.7", "MSG client_public_ip=0.0.0.0"),
         ("MSG rx_chans=8 client_public_ip=203.0.113.7", "MSG rx_chans=8 client_public_ip=0.0.0.0"),
         ("MSG load_cfg=%7b%22admin_email%22%7d cfg_loaded", "MSG load_cfg=omitted:23 cfg_loaded"),
+        ("MSG load_cfg=omitted:20947", "MSG load_cfg=omitted:20947"),  # already sanitized: unchanged
         ("MSG audio_rate=12000", "MSG audio_rate=12000"),
         ("SET mod=cw low_cut=300 high_cut=700 freq=7027.500", "SET mod=cw low_cut=300 high_cut=700 freq=7027.500"),
     ]
