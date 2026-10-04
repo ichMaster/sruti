@@ -15,7 +15,7 @@ flowchart LR
   subgraph NET["The internet — crossed outbound only"]
     GEM["generativelanguage.googleapis.com<br/>Gemini API · https :443"]
     API["api.anthropic.com<br/>Claude API · https :443"]
-    DIR["kiwisdr.com/public<br/>https :443"]
+    DIR["kiwisdr.com/public<br/>http :80"]
   end
 
   subgraph MAC["The managed Mac — every inbound destroyed, outbound only"]
@@ -72,8 +72,11 @@ required; receiver optional, defaulting to the current one — tuning is what sw
   session name (click to rename), receiver, frequency, link status and the running costs; New session
   (asks for a frequency, the receiver optional); the session switcher and the config panel with the
   capture inspector as side panels.
-- **Headless mode** (`sruti listen --receiver <host:port> --freq <kHz>`) runs the same core with the
-  character stream printed to the terminal — from v1.2, before the app exists, and for debugging.
+- **Headless mode** (`sruti listen --receiver <host:port> --freq <kHz> [--record <dir>] [--raw]`) runs the
+  same core in the terminal, before the app exists and for debugging. From v1.1 it prints the link states
+  and the signal level every 10 s; `--raw` adds every raw message in both directions, and `--record`
+  writes the session as WAV + capture (§The receiver, the v0.1 format), named `<started>-<receiver>-<freq>`.
+  The decoded characters join the output in v1.2.
 
 Everything below the window — receiver, decoder, segmenter, store, explainers, glossary — never imports the app's
 code. The window is a shell over the core: new behavior goes into the core, not into the page.

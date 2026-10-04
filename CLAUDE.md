@@ -49,6 +49,8 @@ The package lives in `src/sruti/` (from v1.1: `config.py`, `events.py` — the e
 `receiver/`), the tests in `tests/`, the PoCs in `poc/`. Set up once with `uv sync`.
 
 - Headless (from v1.1, characters from v1.2): `uv run sruti listen --receiver <host:port> --freq <kHz>`
+  — link states and the level every 10 s; `--raw` prints the raw messages, `--record <dir>` writes WAV +
+  capture.
 - The app (from v1.5): `uv run sruti app` — the window with the four sections, the config panel with the
   capture inspector, the session switcher. The working prototype is `poc/desktop/`.
 - Configuration: defaults in `src/sruti/config.py`, overridden by an optional `sruti.toml` (gitignored; see
@@ -133,7 +135,7 @@ Changing any of these updates ARCHITECTURE.md and the test that pins it, in the 
   append · rebuild-of-window);
 - the **core commands** the page may send through the bridge (`tune`, `start`/`stop`, `explain`, `open-session`,
   `rename-session`, `set-config`);
-- the **CLI**: `sruti listen --receiver <host:port> --freq <kHz>`, `sruti app`;
+- the **CLI**: `sruti listen --receiver <host:port> --freq <kHz> [--record <dir>] [--raw]`, `sruti app`;
 - the **session store layout** (`var/sessions/<started>-<receiver>-<freq>.jsonl`, append-only);
 - the **receiver messages** sruti sends and reads, and how it connects (ARCHITECTURE.md §The receiver);
 - the **decoder's output**: characters with timestamps, prosigns as strings, unknown codes as `[err]`

@@ -1,10 +1,13 @@
 """The command line: `sruti listen --receiver <host:port> --freq <kHz>` (ARCHITECTURE §Core and the desktop app)."""
 
 import argparse
+import asyncio
+import dataclasses
+import pathlib
 import sys
 
 from sruti import __version__
-from sruti.config import ConfigError, check_freq, check_host_port
+from sruti.config import ConfigError, check_freq, check_host_port, load_config
 
 
 def _host_port(value: str) -> str:
@@ -28,15 +31,28 @@ def build_parser() -> argparse.ArgumentParser:
     listen = commands.add_parser("listen", help="listen to one receiver and frequency, headless")
     listen.add_argument("--receiver", type=_host_port, required=True, help="a public KiwiSDR, host:port")
     listen.add_argument("--freq", type=_freq, required=True, help="the signal's frequency in kHz (100–30000)")
+    listen.add_argument("--record", type=pathlib.Path, metavar="DIR",
+                        help="record the session as WAV + capture into DIR")
+    listen.add_argument("--raw", action="store_true", help="print every raw message to and from the receiver")
+    listen.add_argument("--drop-after", type=float, help=argparse.SUPPRESS)  # live reconnect check
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "listen":
-        print(f"sruti listen {args.receiver} · {args.freq:g} kHz — the receiver link is not wired yet",
-              file=sys.stderr)
-        return 2
+        from sruti.listen import listen
+        from sruti.receiver.transport import connect_kiwisdr
+
+        try:
+            config = load_config()
+        except ConfigError as exc:
+            print(f"sruti: {exc}", file=sys.stderr)
+            return 2
+        receiver = dataclasses.replace(config.receiver, host_port=args.receiver, freq_khz=args.freq)
+        final = asyncio.run(listen(config, receiver, connect_kiwisdr, record_dir=args.record, raw=args.raw,
+                                   drop_after=args.drop_after))
+        return 0 if final in ("stopped", "ended") else 1
     return 2
 
 

@@ -166,7 +166,7 @@ The agent chooses where to listen. To be decided once v1 is in use: choose recei
 
 - **Receiver messages** (ARCHITECTURE §The receiver) — observed in **v0.1**, implemented by the receiver link in **v1.1**, shown raw in the capture inspector in **v1.5**.
 - **The decoder** (ARCHITECTURE §The decoder) — prototype in **v0.1**, product in **v1.2**; its status in the capture inspector in **v1.5**.
-- **CLI** — `sruti listen --receiver <host:port> --freq <kHz>` in **v1.1** (audio) and **v1.2** (characters); `sruti app` in **v1.5**.
+- **CLI** — `sruti listen --receiver <host:port> --freq <kHz>` in **v1.1** (audio; `--record`, `--raw`) and **v1.2** (characters); `sruti app` in **v1.5**.
 - **Segmenter rules and thresholds** (end-of-turn prosigns, pause, length cap; in configuration) — **v1.3**.
 - **Record shapes and the session store layout** — `session`, `char`, `piece` and `var/sessions/<started>-<receiver>-<freq>.jsonl` in **v1.3**; `explanation` with `tier: "piece"` in **v1.4**; with `tier: "session"` in **v1.6**.
 - **Core commands** (`tune`, `start`/`stop`, `open-session`, `rename-session`, `set-config`) — in the core from **v1.3**, exposed to the page through the bridge in **v1.5**; `explain` wired in **v1.6**.
