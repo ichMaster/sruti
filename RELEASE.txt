@@ -1,6 +1,22 @@
 sruti — release notes
 =====================
 
+Version 0.2.0 (2026-10-04)
+---------------------------
+- Phase v0.2 — Prove the piece model.
+- SRUTI-005: three golden examples in one format — 001 Italian ragchew, 002 DJ0YI's POTA activation,
+  003 E72U's contest run — with a reference gloss and message per piece and a Ukrainian session
+  reference (drafted with Claude Opus 5.5 by poc/explain_session.py, approved by the owner).
+- SRUTI-006: poc/eval_golden.py runs the piece explainer over the golden examples, checks schema,
+  budget, coverage, invented call signs and guessed unreadable text, and writes a side-by-side report;
+  --live opt-in, --selftest offline, --rescore without new calls.
+- SRUTI-007: five live gemini-3.8-flash runs. Decision: the hints glossary (glossary/cw-hints.md) with
+  the settled prompt — 15/15 pieces pass, 1.5–4.1 s, ~$0.0026 per piece. Contest and POTA conventions
+  added to both glossaries. The prompt, the glossary form and the measured figures are in ARCHITECTURE
+  §The two tiers; the runs in poc/RESULTS.md. 002's reference corrected to the 559 report the model read.
+- Code review: 7 findings, 2 fixed (a "(?)" no longer excuses an invented call sign; rescore refuses
+  changed pieces and keeps the run time), 5 deferred to v1.4 and v1.6.
+
 Version 0.1.0 (2026-10-04)
 ---------------------------
 - Phase v0.1 — Text from the receiver, decoded on the Mac.

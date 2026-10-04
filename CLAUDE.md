@@ -28,7 +28,7 @@ retuning), always saved, and replayable. The interface is a desktop window (pywe
 So far the repo holds the specification and the PoCs (`poc/`): the v0.1 receiver spike and prototype
 decoder, the model comparison, and the desktop-window prototype.
 
-Latest release: v0.1.0 (phase v0.1 — text from the receiver, decoded on the Mac).
+Latest release: v0.2.0 (phase v0.2 — prove the piece model).
 
 | Version | Phases | What it delivers |
 |---|---|---|
