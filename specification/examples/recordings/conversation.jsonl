@@ -1,0 +1,70 @@
+{"t": 1791092718.032, "ws": "SND", "dir": "→", "msg": "SET auth t=kiwi p="}
+{"t": 1791092718.032, "ws": "SND", "dir": "→", "msg": "SERVER DE CLIENT sruti SND"}
+{"t": 1791092718.032, "ws": "SND", "dir": "→", "msg": "SET ident_user=sruti"}
+{"t": 1791092718.032, "ws": "SND", "dir": "→", "msg": "SET mod=cw low_cut=300 high_cut=700 freq=7027.500"}
+{"t": 1791092718.032, "ws": "SND", "dir": "→", "msg": "SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50"}
+{"t": 1791092718.032, "ws": "SND", "dir": "→", "msg": "SET compression=0"}
+{"t": 1791092718.285, "ws": "SND", "dir": "←", "msg": "MSG sample_rate=11998.992696"}
+{"t": 1791092718.285, "ws": "SND", "dir": "→", "msg": "SET squelch=0 max=0"}
+{"t": 1791092718.285, "ws": "SND", "dir": "→", "msg": "SET genattn=0"}
+{"t": 1791092718.285, "ws": "SND", "dir": "→", "msg": "SET gen=0 mix=-1"}
+{"t": 1791092718.285, "ws": "SND", "dir": "←", "msg": "MSG client_public_ip=0.0.0.0"}
+{"t": 1791092718.285, "ws": "SND", "dir": "←", "msg": "MSG rx_chans=8 firmware_sel=5"}
+{"t": 1791092718.285, "ws": "SND", "dir": "←", "msg": "MSG chan_no_pwd=6"}
+{"t": 1791092718.285, "ws": "SND", "dir": "←", "msg": "MSG chan_no_pwd_true=6"}
+{"t": 1791092718.285, "ws": "SND", "dir": "←", "msg": "MSG max_camp=4"}
+{"t": 1791092718.285, "ws": "SND", "dir": "←", "msg": "MSG badp=1"}
+{"t": 1791092889.697, "ws": "SND", "dir": "→", "msg": "SET auth t=kiwi p="}
+{"t": 1791092889.699, "ws": "SND", "dir": "→", "msg": "SERVER DE CLIENT sruti SND"}
+{"t": 1791092889.699, "ws": "SND", "dir": "→", "msg": "SET ident_user=sruti"}
+{"t": 1791092889.699, "ws": "SND", "dir": "→", "msg": "SET mod=cw low_cut=300 high_cut=700 freq=7027.500"}
+{"t": 1791092889.699, "ws": "SND", "dir": "→", "msg": "SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50"}
+{"t": 1791092889.699, "ws": "SND", "dir": "→", "msg": "SET compression=0"}
+{"t": 1791092889.947, "ws": "SND", "dir": "←", "msg": "MSG sample_rate=11998.992702"}
+{"t": 1791092889.947, "ws": "SND", "dir": "→", "msg": "SET squelch=0 max=0"}
+{"t": 1791092889.948, "ws": "SND", "dir": "→", "msg": "SET genattn=0"}
+{"t": 1791092889.948, "ws": "SND", "dir": "→", "msg": "SET gen=0 mix=-1"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG client_public_ip=0.0.0.0"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG rx_chans=8 firmware_sel=5"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG chan_no_pwd=6"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG chan_no_pwd_true=6"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG is_local=0,0,0"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG max_camp=4"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG badp=0"}
+{"t": 1791092889.948, "ws": "SND", "dir": "←", "msg": "MSG version_maj=1 version_min=902 debian_ver=11 model=2 platform=0 hw=1 ext_clk=0 freq_offset=0.000 abyy=A26 dx_db_name=dx has_attn=1"}
+{"t": 1791092890.156, "ws": "SND", "dir": "←", "msg": "MSG load_cfg=omitted:13"}
+{"t": 1791092890.37, "ws": "SND", "dir": "←", "msg": "MSG load_dxcfg=omitted:13"}
+{"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG load_dxcomm_cfg=omitted:13"}
+{"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG cfg_loaded"}
+{"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG center_freq=15000000 bandwidth=30000000 adc_clk_nom=66666600"}
+{"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG audio_init=0 audio_rate=12000"}
+{"t": 1791092890.589, "ws": "SND", "dir": "→", "msg": "SET AR OK in=12000 out=44100"}
+{"t": 1791092890.589, "ws": "SND", "dir": "←", "msg": "MSG last_community_download=Downloads%20enabled.%20Last%20checked%3a%20Sun%20Oct%20%204%2001%3a36%3a12%202026"}
+{"t": 1791092890.884, "ws": "SND", "dir": "←", "msg": "MSG max_thr=90"}
+{"t": 1791092890.884, "ws": "SND", "dir": "←", "msg": "MSG rf_attn=0.0"}
+{"t": 1791092897.45, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092907.592, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092917.456, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092927.451, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092937.43, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092947.443, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092957.445, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092963.157, "ws": "SND", "dir": "←", "msg": "MSG last_community_download=Downloads%20enabled.%20Last%20checked%3a%20Sun%20Oct%20%204%2001%3a36%3a12%202026"}
+{"t": 1791092966.01, "ws": "SND", "dir": "←", "msg": "MSG last_community_download=Downloads%20enabled.%20Last%20checked%3a%20Sun%20Oct%20%204%2001%3a36%3a12%202026"}
+{"t": 1791092967.436, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092977.554, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092987.626, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791092997.442, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093007.528, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093017.548, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093027.434, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093039.779, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093047.432, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093057.577, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093067.44, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093077.444, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093097.642, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093099.91, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093107.429, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093117.435, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
+{"t": 1791093127.597, "ws": "SND", "dir": "←", "msg": "MSG antsw_AntennaDenySwitching=0"}
