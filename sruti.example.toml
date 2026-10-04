@@ -1,0 +1,13 @@
+# Copy to sruti.toml (gitignored) and change what you need; every key is optional.
+
+[receiver]
+host_port = "sdr.autreradioautreculture.com:8073"   # a public KiwiSDR on an ordinary domain
+freq_khz = 7027.5                                    # the signal's own frequency
+passband = [300, 700]                                # Hz; wider (e.g. [200, 2800]) for an imprecise frequency
+identity = "sruti"                                   # the name the receiver shows for this connection
+
+[link]
+reconnect_initial_s = 2.0     # first retry after a drop; doubles up to reconnect_max_s
+reconnect_max_s = 60.0
+busy_retry_s = 30.0           # at least this long between tries while the receiver is full
+keepalive_s = 1.0

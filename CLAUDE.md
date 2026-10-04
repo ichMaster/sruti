@@ -45,10 +45,14 @@ under `var/sessions/`, listing and replay), `glossary/` (versioned data), `expla
 Flash, gloss + message per piece), `explain/session` (Claude Opus 5.5, on the Explain action), `ui/app`
 (the pywebview window, its page and the bridge). The core never imports the app's code.
 
+The package lives in `src/sruti/` (from v1.1: `config.py`, `events.py` — the event stream, `cli.py`, and
+`receiver/`), the tests in `tests/`, the PoCs in `poc/`. Set up once with `uv sync`.
+
 - Headless (from v1.1, characters from v1.2): `uv run sruti listen --receiver <host:port> --freq <kHz>`
 - The app (from v1.5): `uv run sruti app` — the window with the four sections, the config panel with the
   capture inspector, the session switcher. The working prototype is `poc/desktop/`.
-- Configuration lives in `sruti.toml`; recordings and session files are local data (`var/`, gitignored);
+- Configuration: defaults in `src/sruti/config.py`, overridden by an optional `sruti.toml` (gitignored; see
+  `sruti.example.toml`); recordings and session files are local data (`var/`, gitignored);
   curated recordings become fixtures and golden examples under `specification/examples/`.
 - `.env` (gitignored) holds the two API keys: `GEMINI_API_KEY` (piece tier) and `ANTHROPIC_API_KEY`
   (session tier). Never print it or commit it. Without a key its tier is off and everything else keeps
@@ -65,8 +69,9 @@ reaches a receiver or a paid API.
 | Lint | `uv run ruff check .` | any Python change |
 | Tests | `uv run pytest` (one test: `uv run pytest tests/test_x.py::test_name`) | any Python change |
 
-- **Before v1.1:** there is no `pyproject.toml`, so the Python gates are `n/a`, not passed. ruff and pytest
-  are dev dependencies, added by the issue that creates `pyproject.toml`.
+- **From v1.1** the gates apply to every change: ruff and pytest are dev dependencies pinned in `uv.lock`,
+  ruff's rule set is explicit in `pyproject.toml`, and GitHub Actions (`.github/workflows/ci.yml`) runs
+  both on every push. Releases before v1.1 recorded the Python gates as `n/a`.
 - **Opt-in, never automatic:** the golden-example eval (real models over `specification/examples/`) and the
   live check (the 14.100 MHz beacons on a real receiver). Run them only when the owner asks.
 - **Manual gates:** the ROADMAP DoD items marked **Manual (owner)** need a live receiver, a real model run
