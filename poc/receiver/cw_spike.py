@@ -96,15 +96,34 @@ CONFIG_BLOBS = ("load_cfg", "load_dxcfg", "load_dxcomm_cfg")
 
 
 def sanitize(msg: str) -> str:
-    if msg.startswith("MSG client_public_ip="):
-        return "MSG client_public_ip=0.0.0.0"  # the owner's address
-    if msg.startswith("MSG "):
-        pairs = []
-        for pair in msg[4:].split(" "):
-            name, eq, value = pair.partition("=")
-            pairs.append(f"{name}=omitted:{len(value)}" if name in CONFIG_BLOBS and eq else pair)
-        return "MSG " + " ".join(pairs)
-    return msg
+    if not msg.startswith("MSG "):
+        return msg
+    pairs = []
+    for pair in msg[4:].split(" "):
+        name, eq, value = pair.partition("=")
+        if name == "client_public_ip" and eq:
+            pair = "client_public_ip=0.0.0.0"  # the owner's address, wherever the receiver puts it
+        elif name in CONFIG_BLOBS and eq:
+            pair = f"{name}=omitted:{len(value)}"
+        pairs.append(pair)
+    return "MSG " + " ".join(pairs)
+
+
+def selftest() -> int:
+    """Offline checks of what a capture keeps."""
+    cases = [
+        ("MSG client_public_ip=203.0.113.7", "MSG client_public_ip=0.0.0.0"),
+        ("MSG rx_chans=8 client_public_ip=203.0.113.7", "MSG rx_chans=8 client_public_ip=0.0.0.0"),
+        ("MSG load_cfg=%7b%22admin_email%22%7d cfg_loaded", "MSG load_cfg=omitted:23 cfg_loaded"),
+        ("MSG audio_rate=12000", "MSG audio_rate=12000"),
+        ("SET mod=cw low_cut=300 high_cut=700 freq=7027.500", "SET mod=cw low_cut=300 high_cut=700 freq=7027.500"),
+    ]
+    failed = 0
+    for raw, want in cases:
+        got = sanitize(raw)
+        failed += got != want
+        print(f"{'ok ' if got == want else 'BAD'} {raw!r} → {got!r}" + ("" if got == want else f"  (want {want!r})"))
+    return 1 if failed else 0
 
 
 class Capture:
@@ -419,6 +438,7 @@ def main() -> int:
                     help="also attach the receiver's own CW_decoder extension (EXT socket)")
     ap.add_argument("--decoder-test", action="store_true",
                     help="diagnostic: have the receiver play its built-in CW test file through the decoder")
+    ap.add_argument("--selftest", action="store_true", help="offline checks of what captures keep, then exit")
     ap.add_argument("--browser-path", action="store_true",
                     help="connect like the browser page: the /VER timestamp and the /ws/no_wf/ path")
     args = ap.parse_args()
@@ -428,6 +448,8 @@ def main() -> int:
         args.freq = args.scan[0]
         if not args.audio:
             ap.error("--scan needs --audio")
+    if args.selftest:
+        return selftest()
     if args.replay:
         return replay(pathlib.Path(args.replay))
     if not args.receiver or args.freq is None:
