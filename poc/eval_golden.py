@@ -91,15 +91,15 @@ def uncovered_tokens(piece: str, gloss: list[dict]) -> list[str]:
 
 
 def invented_call_signs(ans: dict, raw_so_far: str) -> list[str]:
-    """Call signs in the answer that the raw pieces do not contain, unless marked (?) right after."""
+    """Call signs in the answer that the raw pieces do not contain (spaces ignored, so joined fragments
+    count). A (?) does not excuse one: the prompt forbids offering a call sign that is not in the text."""
     texts = [ans.get("message") or ""] + list(ans.get("rebuilt") or [])
     texts += [r.get("meaning", "") for r in ans.get("gloss") or []]
     raw = squash(raw_so_far)
     invented = []
     for text in texts:
         for m in CALL_SIGN.finditer(text):
-            marked = "(?)" in text[m.end(): m.end() + 6]
-            if squash(m.group(0)) not in raw and not marked and m.group(0) not in invented:
+            if squash(m.group(0)) not in raw and m.group(0) not in invented:
                 invented.append(m.group(0))
     return invented
 
@@ -286,10 +286,13 @@ def selftest() -> int:
     marks_ok = not guessed_unreadable({"gloss": [{"token": "EE E", "meaning": "[dits]"}]}, ref) \
         and guessed_unreadable({"gloss": [{"token": "EE E", "meaning": "the letter E"}]}, ref) == ["EE E"]
     alternatives_ok = not invented_call_signs({"message": "garbled (?) OM3CPF/OM3CNF"}, "UOM3CNF OM3CPF") \
-        and invented_call_signs({"message": "UW3WU or UR3WU"}, "UW3WU") == ["UR3WU"]
+        and invented_call_signs({"message": "UW3WU or UR3WU"}, "UW3WU") == ["UR3WU"] \
+        and invented_call_signs({"message": "UW3WU (?) UR3WU (?)"}, "UW3WU") == ["UR3WU"] \
+        and not invented_call_signs({"message": "IU3FEJ (?) from IZ4PHG"}, "IU3 F E JDE IZ4PHG")
     ok &= marks_ok and alternatives_ok
     print(f"{'ok ' if marks_ok else 'BAD'} a bracketed mark counts as doubt; a plain reading of an unreadable token fails")
-    print(f"{'ok ' if alternatives_ok else 'BAD'} slash alternatives are two call signs; an unmarked new one fails")
+    print(f"{'ok ' if alternatives_ok else 'BAD'} slash alternatives are two call signs; a new one fails, (?) or not;"
+          " joined fragments pass")
     text = report({"selftest": results}, "canned", "hints")
     has_rows = "OK7XYZ" in text and "Reference message" in text
     ok &= has_rows
