@@ -150,7 +150,15 @@ the browser page's path for a page without a waterfall. Some receivers close `ki
 | → | `SET AR OK in=<audio_rate> out=44100` | acknowledge the audio rate the receiver announced |
 | → | `SET squelch=0 max=0`, `SET genattn=0`, `SET gen=0 mix=-1` | squelch off, the receiver's test generator off |
 | → | `SET keepalive` | once a second, or the receiver drops the channel |
-| ← | `MSG <name>=<value> …` | receiver status: `version_maj`, `version_min`, `audio_rate`, `sample_rate`, `client_public_ip`, `rx_chans`, `chan_no_pwd`, `max_camp`, `cfg_loaded`, and the error states `badp=1` (all channels without a password are taken), `too_busy`, `down`, `redirect` |
+| ← | `MSG badp=<0\|1>` | `0`: the channel is ours; `1`: all channels without a password are taken — "receiver busy", retry later |
+| ← | `MSG too_busy`, `MSG down`, `MSG redirect` | further refusals the protocol defines (not yet observed): too many listeners, receiver down, try another address |
+| ← | `MSG rx_chans`, `chan_no_pwd`, `chan_no_pwd_true`, `max_camp`, `is_local` | channels: total (8 on Trémolat), without a password (6), how many may share ("camp" on) one, whether we are on the receiver's LAN |
+| ← | `MSG audio_init`, `audio_rate`, `sample_rate` | the audio: nominal rate (12000) and the measured one (e.g. `11998.9925`), which sizes the WAV and the decoder's clock |
+| ← | `MSG version_maj`, `version_min`, `debian_ver`, `model`, `platform`, `hw`, `firmware_sel`, `abyy` | the receiver's identity: software v1.902, OS, board |
+| ← | `MSG center_freq`, `bandwidth`, `adc_clk_nom`, `ext_clk`, `freq_offset`, `has_attn`, `rf_attn`, `max_thr` | the RF front end: 0–30 MHz coverage, clock, attenuator |
+| ← | `MSG load_cfg`, `load_dxcfg`, `load_dxcomm_cfg`, `cfg_loaded`, `dx_db_name`, `last_community_download` | the receiver's configuration and band-label databases, URL-encoded JSON (20–50 KB each as sent); they carry the owner's contact details and nothing sruti reads |
+| ← | `MSG antsw_AntennaDenySwitching` | the antenna-switch extension's state, repeated every few seconds |
+| ← | `MSG client_public_ip` | the address the receiver sees for us — masked in captures |
 | ← | `SND <binary frame>` | flags (1 byte), sequence (4, little-endian), S-meter (2, big-endian; dBm = 0.1 × value − 127), then the samples: 16-bit big-endian at ~12 kHz when uncompressed |
 
 **Frequency and tone.** In CW mode the receiver takes `freq` as the signal's own frequency and puts it on
@@ -167,7 +175,8 @@ optional second source (ROADMAP §Deferred), and the spike keeps it behind `--ki
 
 **The raw capture.** Every text message crossing the socket is written to a JSONL capture, one object per
 line: `{"t": <epoch seconds>, "ws": "SND", "dir": "→" | "←", "msg": "<the message exactly as on the
-wire>"}`; the owner's address in `MSG client_public_ip` is masked, binary audio frames and the
+wire>"}`; the owner's address in `MSG client_public_ip` is masked, the configuration
+blobs (`load_cfg`, `load_dxcfg`, `load_dxcomm_cfg`) are reduced to their size (`load_cfg=omitted:20947`), binary audio frames and the
 once-a-second `SET keepalive` are left out. The audio goes beside it as a WAV file (mono, 16-bit, 12 kHz).
 The v0.1 recordings are this pair, and the fake receiver replays them.
 
