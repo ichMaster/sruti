@@ -23,10 +23,10 @@ A spike that connects to a public KiwiSDR the way its browser page does — the 
 - **The prototype decoder:** audio → text, with a self-test on synthetic CW (known text, several speeds and noise levels, and an empty passband that must decode to nothing).
 - **Receiver:** the owner's receiver (Trémolat, `sdr.autreradioautreculture.com:8073`); any other must be reachable from the Mac — the corporate web filter blocks dynamic-DNS hosts — with good HF reception and a free slot.
 - **License:** check `kiwiclient`'s license before depending on it (the checkout has no license file).
-- **Recordings:** record three sessions as WAV + capture — the beacons, a CQ run, a conversation — and decode each on the Mac.
+- **Recordings:** record sessions as WAV + capture — a CQ run and a conversation — and decode each on the Mac. (The 14.100 MHz beacon recording moved to v1.2 on 2026-10-04: 20 m had not opened during v0.1's recording window.)
 - **Message inventory:** note every message type the audio channel carries and how it parses — the raw material for the config panel's capture inspector (v1.5).
 
-**DoD:** on 14.100 MHz the beacon call signs (e.g. `OH2B`) decode as text on the Mac; a live conversation in 7.000–7.040 or 14.000–14.070 MHz decodes to readable text; the recordings are saved.
+**DoD:** a live conversation in 7.000–7.040 or 14.000–14.070 MHz decodes to readable text on the Mac; the recordings are saved.
 
 **Tests:** the prototype decoder's synthetic self-test; the recordings become fixtures.
 
@@ -76,10 +76,11 @@ The product version of the v0.1 prototype, in the `decoder` component: it follow
 **Tasks:**
 - **The decoder:** tone detection, envelope, adaptive threshold, speed tracking, Morse table — streaming, on blocks of live audio.
 - **Status:** tone, speed and signal-over-noise as events, for the capture inspector.
+- **The beacon recording** (carried over from v0.1): 14.100 MHz on Trémolat while 20 m is open, at least one full 3-minute NCDXF cycle, saved as a fixture beside the v0.1 recordings.
 - **Tuning:** the parameters in configuration, tuned on the v0.1 recordings.
 - **The CLI:** `sruti listen` prints the decoded characters as they arrive.
 
-**DoD:** on the v0.1 beacon recording the beacon call signs decode; on the recorded conversation the text reads at least as well as the prototype's; an empty passband decodes to nothing.
+**DoD:** on the beacon recording the beacon call signs (e.g. `OH2B`) decode; on the recorded conversation the text reads at least as well as the prototype's; an empty passband decodes to nothing.
 
 **Tests:** unit — each stage on synthetic CW (speeds, noise, fading, an empty passband) and streaming in blocks equals decoding the whole recording; regression — the v0.1 recordings against their expected text.
 
