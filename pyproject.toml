@@ -35,7 +35,7 @@ extend-exclude = ["var"]
 [tool.ruff.lint]
 # An explicit set, so the gate does not move with ruff's defaults.
 select = ["E", "F", "W", "B", "SIM", "RUF", "S", "BLE", "DTZ", "PIE", "EXE", "ISC", "UP", "I"]
-ignore = ["RUF001"]  # en dashes and other typography in user-facing strings are deliberate
+ignore = ["RUF001", "RUF002", "RUF003"]  # en dashes, ×, − and other typography are deliberate
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
