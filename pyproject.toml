@@ -1,6 +1,6 @@
 [project]
 name = "sruti"
-version = "0.2.0"
+version = "1.1.0"
 description = "A private listening agent: CW from a public KiwiSDR, decoded and explained on the Mac."
 readme = "README.md"
 license = "MIT"

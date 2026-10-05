@@ -1,6 +1,23 @@
 sruti — release notes
 =====================
 
+Version 1.1.0 (2026-10-05)
+---------------------------
+- Phase v1.1 — Project skeleton and the receiver link.
+- SRUTI-008: the Python project (uv, src/sruti/, console script sruti), ruff and pytest with an explicit
+  rule set, GitHub Actions CI; configuration (defaults in code, sruti.toml, the .env keys exposed only as
+  set or missing); the core's event types and asyncio bus.
+- SRUTI-009: the receiver protocol — only the documented messages, MSG parsing and the refusal states,
+  SND frames, the sanitized capture + WAV; pinned to ARCHITECTURE's message table.
+- SRUTI-010: sruti's own KiwiSDR client, no kiwiclient — browser-style connect, keepalive, reconnect with
+  jittered backoff, polite busy waits, a time-limit stop; an in-memory fake receiver replaying WAV +
+  capture, so no test opens a socket.
+- SRUTI-011: sruti listen --receiver --freq [--record] [--raw]. The live hour on Trémolat survived a
+  forced drop (84,208 frames, reconnected in 5 s) and its recording replays identically.
+- Code review: 7 findings, 2 fixed (a silent connection is dropped after link.silence_s and reconnected;
+  WebSocket messages capped at 1 MiB), 5 deferred to v1.3, v1.5, v2 and the backlog.
+- 72 tests; CI green.
+
 Version 0.2.0 (2026-10-04)
 ---------------------------
 - Phase v0.2 — Prove the piece model.
